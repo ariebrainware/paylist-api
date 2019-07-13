@@ -108,7 +108,7 @@ func deletePaylist(c *gin.Context) {
 		return
 	}
 
-	db.Delete(&model.Paylist{})
+	db.Delete(&paylist)
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Paylist deleted successfully!"})
 }
 
