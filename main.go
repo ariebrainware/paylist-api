@@ -15,6 +15,11 @@ import (
 
 var db *gorm.DB
 
+type endpoint struct {
+	Method string
+	URL    string
+}
+
 func init() {
 	var err error
 
@@ -117,18 +122,27 @@ func deletePaylist(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
-	// CORS module
-	corsConfig := cors.DefaultConfig()
-	// corsConfig.AllowWildcard = true
-	corsConfig.AllowOrigins = []string{"*", "127.0.0.1", "localhosts"}
-	router.Use(cors.New(corsConfig))
-	v1 := router.Group("/v1/paylist")
-	{
-		v1.GET("/", fetchAllPaylist)
-		v1.GET("/:id", fetchSinglePaylist)
-		v1.POST("/", createPaylist)
-		v1.PUT("/:id", updatePaylist)
-		v1.DELETE("/:id", deletePaylist)
+	router.Use(cors.Default())
+
+	listEndpoint := []endpoint{
+		{Method: "GET", URL: "/v1/paylist"},
+		{Method: "POST", URL: "/v1/paylist"},
+		{Method: "PUT", URL: "/v1/paylist/:id"},
+		{Method: "DELETE", URL: "/v1/paylist/:id"},
 	}
+
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  http.StatusOK,
+			"message": "Paylist-API available endpoint",
+			"data":    listEndpoint,
+		})
+	})
+	v1 := router.Group("/v1/paylist/")
+	v1.GET("/", fetchAllPaylist)
+	v1.GET("/:id", fetchSinglePaylist)
+	v1.POST("/", createPaylist)
+	v1.PUT("/:id", updatePaylist)
+	v1.DELETE("/:id", deletePaylist)
 	router.Run()
 }
