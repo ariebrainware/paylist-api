@@ -1,7 +1,12 @@
 package model
 
-type PayList struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Value string `json:"value"`
+import (
+	"github.com/jinzhu/gorm"
+)
+
+type Paylist struct {
+	gorm.Model
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Amount int    `json:"amount"`
 }
