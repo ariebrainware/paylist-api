@@ -17,7 +17,10 @@ var db *gorm.DB
 
 func init() {
 	var err error
-	db, err = gorm.Open("mysql", "rob0ne:@_L0c4lDB@/paylist?charset=utf8&parseTime=True&loc=Local")
+
+	//connString := "userdb:passworddb/databasename?charset=utf8&parseTime=True&loc=Local"
+	connString := "rob0ne:@_L0c4lDB@/paylist?charset=utf8&parseTime=True&loc=Local"
+	db, err = gorm.Open("mysql", connString)
 	if err != nil {
 		panic("Failed to connect database")
 	}
