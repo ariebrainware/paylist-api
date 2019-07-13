@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -22,13 +24,20 @@ func init() {
 
 	db.AutoMigrate(&model.Paylist{})
 	db.AutoMigrate(&model.User{})
+	fmt.Println("Schema migrated!!")
 }
 
 // createPaylist
 func createPaylist(c *gin.Context) {
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
-	paylist := model.Paylist{Name: c.PostForm("name"), Amount: amount}
-	db.Save(&model.Paylist{})
+	paylist := model.Paylist{
+		Name:   c.PostForm("name"),
+		Amount: amount,
+	}
+	fmt.Println(c.PostForm("name"))
+	fmt.Println(amount)
+
+	db.Save(&paylist)
 	c.JSON(http.StatusCreated, gin.H{
 		"status":     http.StatusCreated,
 		"message":    "Paylist item created successfully!",
@@ -69,11 +78,10 @@ func updatePaylist(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	updatedPaylist := model.Paylist{
-		ID:     id,
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	err := db.Model(&model.Paylist{}).Update(&updatedPaylist).Error
+	err := db.Model(&model.Paylist{}).Where("ID = ?", id).Update(&updatedPaylist).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusOK,
@@ -93,7 +101,7 @@ func deletePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
 
-	db.First(&model.Paylist{}, paylistID)
+	db.First(&paylist, paylistID)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No paylist found!"})
@@ -106,12 +114,16 @@ func deletePaylist(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
-	http.ListenAndServe(":3001", router)
+	// CORS module
+	corsConfig := cors.DefaultConfig()
+	// corsConfig.AllowWildcard = true
+	corsConfig.AllowOrigins = []string{"*", "127.0.0.1", "localhosts"}
+	router.Use(cors.New(corsConfig))
 	v1 := router.Group("/v1/paylist")
 	{
-		v1.POST("/", createPaylist)
 		v1.GET("/", fetchAllPaylist)
 		v1.GET("/:id", fetchSinglePaylist)
+		v1.POST("/", createPaylist)
 		v1.PUT("/:id", updatePaylist)
 		v1.DELETE("/:id", deletePaylist)
 	}
