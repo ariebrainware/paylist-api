@@ -125,10 +125,10 @@ func main() {
 	router.Use(cors.Default())
 
 	listEndpoint := []endpoint{
-		{Method: "GET", URL: "/v1/paylist"},
-		{Method: "POST", URL: "/v1/paylist"},
-		{Method: "PUT", URL: "/v1/paylist/:id"},
-		{Method: "DELETE", URL: "/v1/paylist/:id"},
+		{Method: "GET", URL: "/paylist"},
+		{Method: "POST", URL: "/paylist"},
+		{Method: "PUT", URL: "/paylist/:id"},
+		{Method: "DELETE", URL: "/paylist/:id"},
 	}
 
 	router.GET("/", func(c *gin.Context) {
@@ -138,11 +138,11 @@ func main() {
 			"data":    listEndpoint,
 		})
 	})
-	v1 := router.Group("/v1/paylist/")
-	v1.GET("/", fetchAllPaylist)
-	v1.GET("/:id", fetchSinglePaylist)
-	v1.POST("/", createPaylist)
-	v1.PUT("/:id", updatePaylist)
-	v1.DELETE("/:id", deletePaylist)
-	router.Run()
+	// v1 := router.Group("/v1/paylist/")
+	router.GET("/paylist", fetchAllPaylist)
+	router.GET("/paylist/:id", fetchSinglePaylist)
+	router.POST("/paylist", createPaylist)
+	router.PUT("/paylist/:id", updatePaylist)
+	router.DELETE("/paylist/:id", deletePaylist)
+	router.Run(":3002")
 }

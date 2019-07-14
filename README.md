@@ -13,10 +13,10 @@ Pay your bill easily!
 
 | Endpoint        | Method | Description                                       |
 | --------------- | ------ | ------------------------------------------------- |
-| /v1/paylist     | GET    | Show all paylist                                  |
-| /v1/paylist     | POST   | Add new paylist                                   |
-| /v1/paylist/:id | PUT    | Update paylist based on `id` in parameter request |
-| /v1/paylist/:id | DELETE | Delete paylist based on input `id` parameter      |
+| /paylist     | GET    | Show all paylist                                  |
+| /paylist     | POST   | Add new paylist                                   |
+| /paylist/:id | PUT    | Update paylist based on `id` in parameter request |
+| /paylist/:id | DELETE | Delete paylist based on input `id` parameter      |
 
 
 ## Database Design
