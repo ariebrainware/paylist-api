@@ -43,7 +43,7 @@ func main() {
 	router.DELETE("/paylist/:id", endpoints.DeletePaylist)
 	router.GET("/users", endpoints.FetchUser)
 	router.GET("/users/:id", endpoints.FetchSingleUser)
-	router.POST("/users", endpoints.CreateUser)
+	router.POST("/users", endpoints.Login)
 	router.PUT("/users/:id", endpoints.UpdateUser)
 	router.DELETE("/users/:id", endpoints.DeleteUser)
 	router.Run(":3002")

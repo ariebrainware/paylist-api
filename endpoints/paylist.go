@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	//"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -66,9 +65,9 @@ func FetchAllPaylist(c *gin.Context) {
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	db.First(&model.Paylist{}, paylistID)
+	err := db.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
-	if paylist.ID == 0 {
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
 		return
 	}

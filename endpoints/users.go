@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
 	"github.com/gin-gonic/gin"
-
 	"github.com/ariebrainware/paylist-api/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //createUser
@@ -82,12 +81,37 @@ func DeleteUser(c *gin.Context) {
 func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	db.First(&model.User{}, usersID)
+	err := db.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
 
-	if users.ID == 0 {
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": users})
+}
+
+func Login(c *gin.Context) {
+	//username := c.PostForm("username")
+	password := c.PostForm("password")
+	
+	user := &model.User{}
+	db.Find(&user)
+	if user.Username == "" {
+		c.JSON(http.StatusNotFound, gin.H{"status":false, "message": "invalid request"})
+		return
+	}
+
+	err := db.Where("username = ? and password = ?", user.Username, user.Password).First(user).Error
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status":false, "message": "wrong username"})
+		return 
+	}
+	
+	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
+		c.JSON(http.StatusNotFound, gin.H{"status":false, "message": "invalid login"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": false, "message": "logged in"})
 }
