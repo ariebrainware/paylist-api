@@ -12,6 +12,7 @@ import (
 type endpoint struct {
 	Method string
 	URL    string
+	Description string
 }
 
 func main() {
@@ -19,10 +20,22 @@ func main() {
 	router.Use(cors.Default())
 
 	listEndpoint := []endpoint{
-		{Method: "GET", URL: "/paylist"},
-		{Method: "POST", URL: "/paylist"},
-		{Method: "PUT", URL: "/paylist/:id"},
-		{Method: "DELETE", URL: "/paylist/:id"},
+		//Paylist Endpoint
+		{Method: "GET", URL: "/paylist", Description: "Get/Fetch All Paylist Data"},
+		{Method: "GET", URL: "/paylist/:id", Description: "Get/Fetch Single Paylist Data by ID"},
+		{Method: "POST", URL: "/paylist", Description: "Create Paylist Data"},
+		{Method: "PUT", URL: "/paylist/:id", Description: "Edit/Update Paylist Data by ID"},
+		{Method: "DELETE", URL: "/paylist/:id", Description: "Delete Paylist Data by ID"},
+		//User Endpoint
+		{Method: "GET", URL: "/users", Description: "Get/Fetch All User Data"},
+		{Method: "GET", URL: "/users/:id", Description: "Get/Fetch Single User Data by ID"},
+		{Method: "POST", URL: "/users", Description: "Sign Up"},
+		{Method: "POST", URL: "/users/signin", Description: "Sign In"},
+		{Method: "PUT", URL: "/users/:id", Description: "Edit/Update User Data by ID"},
+		{Method: "DELETE", URL: "/users/:id", Description: "Delete User Data by ID"},
+
+
+
 	}
 
 	router.GET("/", func(c *gin.Context) {

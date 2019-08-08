@@ -4,10 +4,19 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
+	
 	"github.com/ariebrainware/paylist-api/model"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
+	jwt "github.com/ariebrainware/dgrijalva/jwt-go"
 )
+
+type Token struct {
+	ID uint
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	jwt.StandardClaims
+}
 
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
@@ -113,12 +122,31 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	// if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-	// 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "invalid login"})
-	// 	return
-	// }
+	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
+	 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "invalid login"})
+	 	return
+	 }
+	 user.Password = ""
+	 tk := &Token{
+		ID: user.ID,
+		Username:  user.Username,
+		Password:  user.Password,
+		//StandardClaims: &jwt.StandardClaims{
+		//	ExpiresAt: expiresAt,
+		//},
+	}
+
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
+	tokenString, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		c.Abort()
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "logged in"})
+		"token": tokenString,
+		"user": user,
+	})
 }
