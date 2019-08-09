@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"os"
 	
 	"github.com/ariebrainware/paylist-api/model"
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,16 @@ func CreateUser(c *gin.Context) {
 	}
 	fmt.Println(c.PostForm("username"))
 	fmt.Println(c.PostForm("password"))
+	pass, err := bcrypt.GenerateFromPassword([]byte(Password), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println(err)
+		err := ErrorResponse{
+			Err: "Password Encryption  failed",
+		}
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "password encryption success!",
+		})
+	}
 
 	db.Save(&users)
 	c.JSON(http.StatusCreated, gin.H{
@@ -127,7 +138,7 @@ func Login(c *gin.Context) {
 	 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "invalid login"})
 	 	return
 	 }
-	 user.Password = ""
+	 //user.Password = ""
 	 tk := &Token{
 		ID: user.ID,
 		Username:  user.Username,
@@ -138,7 +149,7 @@ func Login(c *gin.Context) {
 	}
 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenString, err := token.SignedString([]byte("secret"))
+	tokenString, err := token.SignedString([]byte(os.Getenv("token_password")))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
