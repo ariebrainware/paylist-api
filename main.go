@@ -33,9 +33,6 @@ func main() {
 		{Method: "POST", URL: "/users/signin", Description: "Sign In"},
 		{Method: "PUT", URL: "/users/:id", Description: "Edit/Update User Data by ID"},
 		{Method: "DELETE", URL: "/users/:id", Description: "Delete User Data by ID"},
-
-
-
 	}
 
 	router.GET("/", func(c *gin.Context) {
@@ -46,16 +43,16 @@ func main() {
 		})
 	})
 	v1 := router.Group("/v1/paylist/")
-	v1.GET("/paylist", ep.FetchAllPaylist)
-	v1.GET("/paylist/:id", ep.FetchSinglePaylist)
-	v1.POST("/paylist", ep.CreatePaylist)
-	v1.PUT("/paylist/:id", ep.UpdatePaylist)
-	v1.DELETE("/paylist/:id", ep.DeletePaylist)
-	v1.GET("/users/:id", ep.FetchSingleUser)
-	v1.GET("/users", ep.FetchUser)
+	v1.GET("/paylist",ep.Auth, ep.FetchAllPaylist)
+	v1.GET("/paylist/:id",ep.Auth, ep.FetchSinglePaylist)
+	v1.POST("/paylist",ep.Auth, ep.CreatePaylist)
+	v1.PUT("/paylist/:id",ep.Auth, ep.UpdatePaylist)
+	v1.DELETE("/paylist/:id",ep.Auth, ep.DeletePaylist)
+	v1.GET("/users/:id",ep.Auth, ep.FetchSingleUser)
+	v1.GET("/users",ep.Auth, ep.FetchUser)
 	v1.POST("/users/signin", ep.Login)
-	v1.POST("/users/signup", ep.CreateUser)
-	v1.PUT("/users/:id", ep.UpdateUser)
-	v1.DELETE("/users/:id", ep.DeleteUser)
+	v1.POST("/users/signup",ep.Auth, ep.CreateUser)
+	v1.PUT("/users/:id",ep.Auth, ep.UpdateUser)
+	v1.DELETE("/users/:id",ep.Auth, ep.DeleteUser)
 	router.Run(":3002")
 }
