@@ -11,12 +11,20 @@ Pay your bill easily!
 
 ## API Design
 
-| Endpoint        | Method | Description                                       |
-| --------------- | ------ | ------------------------------------------------- |
-| /paylist     | GET    | Show all paylist                                  |
-| /paylist     | POST   | Add new paylist                                   |
-| /paylist/:id | PUT    | Update paylist based on `id` in parameter request |
-| /paylist/:id | DELETE | Delete paylist based on input `id` parameter      |
+| Endpoint         | Method | Description                                           |
+| ---------------  | ------ | ----------------------------------------------------- |
+| /paylist         | GET    | Show all paylist                                      |
+| /paylist         | POST   | Add new paylist                                       |
+| /paylist/:id     | PUT    | Update paylist based on `id` in parameter request     |
+| /paylist/:id     | DELETE | Delete paylist based on input `id` parameter          |
+| /paylist/:id     | GET    | Show single paylist based on id in parameter request  |
+| /users           | GET    | Show all user                                         |
+| /users/:id       | GET    | Show single user bases on `id` in parameter request   |
+| /users/:id       | PUT    | Update paylist based on `id` in parameter request     |
+| /users/:id       | DELETE | Delete user based on `id` in parameter                |
+| /users/signup    | POST   | Sign Up user or create new user                       |
+| /users/signin    | POST   | Sign in for user                                      |
+
 
 
 ## Database Design

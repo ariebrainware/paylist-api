@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"os"
 	
 	"github.com/ariebrainware/paylist-api/model"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	jwt "github.com/ariebrainware/dgrijalva/jwt-go"
+	jwt "github.com/ariebrainware/dgrijalva/jwt-go"  //Used to sign and verify JWT tokens
 )
 
 type Token struct {
@@ -27,17 +26,17 @@ func CreateUser(c *gin.Context) {
 	}
 	fmt.Println(c.PostForm("username"))
 	fmt.Println(c.PostForm("password"))
-	pass, err := bcrypt.GenerateFromPassword([]byte(Password), bcrypt.DefaultCost)
+	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Println(err)
-		err := ErrorResponse{
-			Err: "Password Encryption  failed",
-		}
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"message": "password encryption failed",
+		})
 		c.JSON(http.StatusCreated, gin.H{
 			"message": "password encryption success!",
 		})
 	}
-
+	users.Password = string(password)
 	db.Save(&users)
 	c.JSON(http.StatusCreated, gin.H{
 		"status":      http.StatusCreated,
@@ -118,38 +117,34 @@ func Login(c *gin.Context) {
 	password := c.PostForm("password")
 
 	user := &model.User{}
-	if username == "" || password == "" {
+	if username == ""{
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "please provide username and password"})
 		return
 	}
 
-	err := db.Where("username = ? and password = ?", username, password).First(&user).Error
+	err := db.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
-			"message": "wrong username or password"})
+			"message": "wrong username"})
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-	 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "invalid login"})
+	 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "wrong password or password doesn't match"})
 	 	return
 	 }
-	 //user.Password = ""
+	 
 	 tk := &Token{
 		ID: user.ID,
 		Username:  user.Username,
-		Password:  user.Password,
-		//StandardClaims: &jwt.StandardClaims{
-		//	ExpiresAt: expiresAt,
-		//},
 	}
-
+	//Create JWT token 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenString, err := token.SignedString([]byte(os.Getenv("token_password")))
+	tokenString, err := token.SignedString([]byte("secret"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -157,6 +152,7 @@ func Login(c *gin.Context) {
 		c.Abort()
 	}
 	c.JSON(http.StatusOK, gin.H{
+		"message": "logged in",
 		"token": tokenString,
 		"user": user,
 	})
