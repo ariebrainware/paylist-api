@@ -13,6 +13,8 @@ import (
 
 type Token struct {
 	ID uint
+	Email string `json:"email"`
+	Name string `json:"name"`
 	Username string  `json:"username"`
 	Password string  `json:"password"`
 	jwt.StandardClaims
@@ -21,11 +23,17 @@ type Token struct {
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
 	users := model.User{
+		Email	: c.PostForm("email"),
+		Name	: c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
+	fmt.Println(c.PostForm("email"))
+	fmt.Println(c.PostForm("name"))
 	fmt.Println(c.PostForm("username"))
 	fmt.Println(c.PostForm("password"))
+
+	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Println(err)
@@ -62,6 +70,8 @@ func FetchUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	updateuser := model.User{
+		Email	: c.PostForm("email"),
+		Name	: c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
@@ -140,6 +150,8 @@ func Login(c *gin.Context) {
 	 
 	 tk := &Token{
 		ID: user.ID,
+		Email: user.Email,
+		Name: user.Name,
 		Username:  user.Username,
 	}
 	//Create JWT token 
