@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	
+	"time"
 	"github.com/ariebrainware/paylist-api/model"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -13,13 +13,18 @@ import (
 
 type Token struct {
 	ID uint
-	Email string `json:"email"`
-	Name string `json:"name"`
-	Username string  `json:"username"`
-	Password string  `json:"password"`
 	jwt.StandardClaims
 }
 
+type user1 struct {
+	ID uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+	Email string `json:"email"`
+	Name string `json:"name"`
+	Username string  `json:"username"`
+}
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
 	users := model.User{
@@ -55,15 +60,24 @@ func CreateUser(c *gin.Context) {
 
 // FetchUser function to get list of users
 func FetchUser(c *gin.Context) {
-	var users []model.User
+	users := model.User{}
+	err := db.Find(&users).Error
 
-	db.Find(&users)
-
-	if len(users) <= 0 {
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": users})
+
+	user := &user1{
+		ID : users.ID,
+		CreatedAt : users.CreatedAt,
+		UpdatedAt : users.UpdatedAt,
+		DeletedAt: users.DeletedAt,
+		Email : users.Email,
+		Name : users.Name,
+		Username : users.Username,
+	}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
 }
 
 // UpdateUser function to update user information
@@ -150,9 +164,6 @@ func Login(c *gin.Context) {
 	 
 	 tk := &Token{
 		ID: user.ID,
-		Email: user.Email,
-		Name: user.Name,
-		Username:  user.Username,
 	}
 	//Create JWT token 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
