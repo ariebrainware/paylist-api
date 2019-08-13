@@ -5,31 +5,34 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
 	"github.com/ariebrainware/paylist-api/model"
+	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	jwt "github.com/ariebrainware/dgrijalva/jwt-go"  //Used to sign and verify JWT tokens
 )
 
+// Token is a struct for token model
 type Token struct {
 	ID uint
 	jwt.StandardClaims
 }
 
 type user1 struct {
-	ID uint
+	ID        uint
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
-	Email string `json:"email"`
-	Name string `json:"name"`
-	Username string  `json:"username"`
+	Email     string     `json:"email"`
+	Name      string     `json:"name"`
+	Username  string     `json:"username"`
 }
+
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
 	users := model.User{
-		Email	: c.PostForm("email"),
-		Name	: c.PostForm("name"),
+		Email:    c.PostForm("email"),
+		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
@@ -69,13 +72,13 @@ func FetchUser(c *gin.Context) {
 	}
 
 	user := &user1{
-		ID : users.ID,
-		CreatedAt : users.CreatedAt,
-		UpdatedAt : users.UpdatedAt,
+		ID:        users.ID,
+		CreatedAt: users.CreatedAt,
+		UpdatedAt: users.UpdatedAt,
 		DeletedAt: users.DeletedAt,
-		Email : users.Email,
-		Name : users.Name,
-		Username : users.Username,
+		Email:     users.Email,
+		Name:      users.Name,
+		Username:  users.Username,
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
 }
@@ -84,8 +87,8 @@ func FetchUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	updateuser := model.User{
-		Email	: c.PostForm("email"),
-		Name	: c.PostForm("name"),
+		Email:    c.PostForm("email"),
+		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
@@ -141,31 +144,35 @@ func Login(c *gin.Context) {
 	password := c.PostForm("password")
 
 	user := &model.User{}
-	if username == ""{
+	if username == "" || password == "" {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "please provide username and password"})
 		return
 	}
 
-	err := db.Where("username = ?", username).First(&user).Error
+	err := db.Where("username = ? AND password = ?", username, password).First(&user).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
-			"message": "wrong username"})
+			"message": "wrong username or password"})
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	fmt.Println(user.Password)
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-	 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "wrong password or password doesn't match"})
-	 	return
-	 }
-	 
-	 tk := &Token{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "wrong password or password doesn't match",
+		})
+		return
+	}
+
+	tk := &Token{
 		ID: user.ID,
 	}
-	//Create JWT token 
+	//Create JWT token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, err := token.SignedString([]byte("secret"))
 	if err != nil {
@@ -174,17 +181,23 @@ func Login(c *gin.Context) {
 		})
 		c.Abort()
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged in",
-		"token": tokenString,
-		"user": user,
+		"token":   tokenString,
+		"user": map[string]interface{}{
+			"id":       user.ID,
+			"name":     user.Name,
+			"username": user.Username,
+			"email":    user.Email,
+		},
 	})
 }
 
-//FuncAuth Function Authorization to handle authorized
+// Auth Function Authorization to handle authorized
 func Auth(c *gin.Context) {
 	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token)(interface{}, error){
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
 			return nil, fmt.Errorf("unexpected SigningMethod :%v", token.Header["alg"])
 		}
@@ -194,7 +207,7 @@ func Auth(c *gin.Context) {
 	if token != nil && err == nil {
 		fmt.Println("token verified")
 	} else {
-		result :=gin.H {
+		result := gin.H{
 			"message": "not authorized",
 		}
 		c.JSON(http.StatusUnauthorized, result)
