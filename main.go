@@ -10,8 +10,8 @@ import (
 )
 
 type endpoint struct {
-	Method string
-	URL    string
+	Method      string
+	URL         string
 	Description string
 }
 
@@ -43,13 +43,13 @@ func main() {
 		})
 	})
 	v1 := router.Group("/v1/paylist/")
-	v1.GET("/paylist",ep.Auth, ep.FetchAllPaylist)
-	v1.GET("/paylist/:id",ep.Auth, ep.FetchSinglePaylist)
-	v1.POST("/paylist",ep.Auth, ep.CreatePaylist)
-	v1.PUT("/paylist/:id",ep.Auth, ep.UpdatePaylist)
-	v1.DELETE("/paylist/:id",ep.Auth, ep.DeletePaylist)
-	v1.GET("/users/:id",ep.Auth, ep.FetchSingleUser)
-	v1.GET("/users",ep.Auth, ep.FetchUser)
+	v1.GET("/paylist", ep.Auth, ep.FetchAllPaylist)
+	v1.GET("/paylist/:id", ep.Auth, ep.FetchSinglePaylist)
+	v1.POST("/paylist", ep.Auth, ep.CreatePaylist)
+	v1.PUT("/paylist/:id", ep.Auth, ep.UpdatePaylist)
+	v1.DELETE("/paylist/:id", ep.Auth, ep.DeletePaylist)
+	v1.GET("/users/:id", ep.Auth, ep.FetchSingleUser)
+	v1.GET("/users", ep.Auth, ep.FetchUser)
 	v1.POST("/users/signin", ep.Login)
 	v1.POST("/users/signup", ep.CreateUser)
 	v1.PUT("/users/:id",ep.Auth, ep.UpdateUser)
