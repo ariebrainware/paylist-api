@@ -51,7 +51,7 @@ func main() {
 	v1.GET("/users/:id",ep.Auth, ep.FetchSingleUser)
 	v1.GET("/users",ep.Auth, ep.FetchUser)
 	v1.POST("/users/signin", ep.Login)
-	v1.POST("/users/signup",ep.Auth, ep.CreateUser)
+	v1.POST("/users/signup", ep.CreateUser)
 	v1.PUT("/users/:id",ep.Auth, ep.UpdateUser)
 	v1.DELETE("/users/:id",ep.Auth, ep.DeleteUser)
 	router.Run(":3002")

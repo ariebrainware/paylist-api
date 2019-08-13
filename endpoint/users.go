@@ -60,22 +60,26 @@ func CreateUser(c *gin.Context) {
 
 // FetchUser function to get list of users
 func FetchUser(c *gin.Context) {
-	users := model.User{}
-	err := db.Find(&users).Error
+	var users []model.User
+	var user []user1
+	db.Find(&users)
 
-	if err != nil {
+	if len(users) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
 		return
-	}
+	   }
 
-	user := &user1{
-		ID : users.ID,
-		CreatedAt : users.CreatedAt,
-		UpdatedAt : users.UpdatedAt,
-		DeletedAt: users.DeletedAt,
-		Email : users.Email,
-		Name : users.Name,
-		Username : users.Username,
+	for _, item := range users {
+	
+		user = append(user, user1{
+		ID : item.ID,
+		CreatedAt : item.CreatedAt,
+		UpdatedAt : item.UpdatedAt,
+		DeletedAt: item.DeletedAt,
+		Email : item.Email,
+		Name : item.Name,
+		Username : item.Username,
+		})
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
 }
@@ -131,8 +135,16 @@ func FetchSingleUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": users})
+	user := &user1{
+		ID : users.ID,
+		CreatedAt : users.CreatedAt,
+		UpdatedAt : users.UpdatedAt,
+		DeletedAt: users.DeletedAt,
+		Email : users.Email,
+		Name : users.Name,
+		Username : users.Username,
+	}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
 }
 
 // Login function to handle login user
@@ -141,7 +153,7 @@ func Login(c *gin.Context) {
 	password := c.PostForm("password")
 
 	user := &model.User{}
-	if username == ""{
+	if username == "" && password == "" {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "please provide username and password"})
@@ -158,7 +170,10 @@ func Login(c *gin.Context) {
 
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-	 	c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "wrong password or password doesn't match"})
+		 c.JSON(http.StatusNotFound, gin.H{
+			 "status": false,
+			 "message": "wrong password or password doesn't match",
+			})
 	 	return
 	 }
 	 
@@ -174,14 +189,24 @@ func Login(c *gin.Context) {
 		})
 		c.Abort()
 	}
+
+	users := &user1{
+		ID : user.ID,
+		CreatedAt : user.CreatedAt,
+		UpdatedAt : user.UpdatedAt,
+		DeletedAt: user.DeletedAt,
+		Email : user.Email,
+		Name : user.Name,
+		Username : user.Username,
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged in",
 		"token": tokenString,
-		"user": user,
+		"user": users,
 	})
 }
 
-//FuncAuth Function Authorization to handle authorized
+//Func Auth Function Authorization to handle authorized
 func Auth(c *gin.Context) {
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token)(interface{}, error){
