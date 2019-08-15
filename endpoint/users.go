@@ -62,7 +62,7 @@ func CreateUser(c *gin.Context) {
 }
 
 // FetchUser function to get list of users
-func FetchUser(c *gin.Context) {
+func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
 	db.Find(&users)

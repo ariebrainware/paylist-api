@@ -49,7 +49,7 @@ func main() {
 	v1.PUT("/paylist/:id", ep.Auth, ep.UpdatePaylist)
 	v1.DELETE("/paylist/:id", ep.Auth, ep.DeletePaylist)
 	v1.GET("/users/:id", ep.Auth, ep.FetchSingleUser)
-	v1.GET("/users", ep.Auth, ep.FetchUser)
+	v1.GET("/users", ep.Auth, ep.FetchAllUser)
 	v1.POST("/users/signin", ep.Login)
 	v1.POST("/users/signup", ep.CreateUser)
 	v1.PUT("/users/:id",ep.Auth, ep.UpdateUser)
