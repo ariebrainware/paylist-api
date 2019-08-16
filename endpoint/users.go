@@ -61,7 +61,7 @@ func CreateUser(c *gin.Context) {
 	})
 }
 
-// FetchUser function to get list of users
+// FetchAllUser function to get list of users
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
@@ -70,17 +70,17 @@ func FetchAllUser(c *gin.Context) {
 	if len(users) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
 		return
-	   }
+	}
 	for _, item := range users {
-	
+
 		user = append(user, user1{
-		ID : item.ID,
-		CreatedAt : item.CreatedAt,
-		UpdatedAt : item.UpdatedAt,
-		DeletedAt: item.DeletedAt,
-		Email : item.Email,
-		Name : item.Name,
-		Username : item.Username,
+			ID:        item.ID,
+			CreatedAt: item.CreatedAt,
+			UpdatedAt: item.UpdatedAt,
+			DeletedAt: item.DeletedAt,
+			Email:     item.Email,
+			Name:      item.Name,
+			Username:  item.Username,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
@@ -139,13 +139,13 @@ func FetchSingleUser(c *gin.Context) {
 		return
 	}
 	user := &user1{
-		ID : users.ID,
-		CreatedAt : users.CreatedAt,
-		UpdatedAt : users.UpdatedAt,
+		ID:        users.ID,
+		CreatedAt: users.CreatedAt,
+		UpdatedAt: users.UpdatedAt,
 		DeletedAt: users.DeletedAt,
-		Email : users.Email,
-		Name : users.Name,
-		Username : users.Username,
+		Email:     users.Email,
+		Name:      users.Name,
+		Username:  users.Username,
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
 }
@@ -174,14 +174,14 @@ func Login(c *gin.Context) {
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	fmt.Println(user.Password)
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		 c.JSON(http.StatusNotFound, gin.H{
-			 "status": false,
-			 "message": "wrong password or password doesn't match",
-			})
-	 	return
-	 }
-	 
-	 tk := &Token{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "wrong password or password doesn't match",
+		})
+		return
+	}
+
+	tk := &Token{
 		ID: user.ID,
 	}
 	//Create JWT token
@@ -195,22 +195,22 @@ func Login(c *gin.Context) {
 	}
 
 	users := &user1{
-		ID : user.ID,
-		CreatedAt : user.CreatedAt,
-		UpdatedAt : user.UpdatedAt,
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 		DeletedAt: user.DeletedAt,
-		Email : user.Email,
-		Name : user.Name,
-		Username : user.Username,
+		Email:     user.Email,
+		Name:      user.Name,
+		Username:  user.Username,
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged in",
-		"token": tokenString,
-		"user": users,
+		"token":   tokenString,
+		"user":    users,
 	})
 }
 
-//Func Auth Function Authorization to handle authorized
+// Auth function authorization to handle authorized
 func Auth(c *gin.Context) {
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
