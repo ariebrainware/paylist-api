@@ -3,7 +3,7 @@ package endpoint
 import (
 	"fmt"
 	"net/http"
-	"strconv"
+	//"strconv"
 	"time"
 
 	"github.com/ariebrainware/paylist-api/model"
@@ -88,26 +88,27 @@ func FetchAllUser(c *gin.Context) {
 
 // UpdateUser function to update user information
 func UpdateUser(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	updateuser := model.User{
-		Email:    c.PostForm("email"),
-		Name:     c.PostForm("name"),
+	var users model.User
+	ID := c.Param("id")
+	updatedUser := model.User{
+		Email : c.PostForm("email"),
+		Name:   c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
-	err := db.Model(&model.User{}).Where("ID = ?", id).Update(&updateuser).Error
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "User update unsuccessfully!",
-			"error":   err,
-		})
-	}
+	db.First(&users, ID)
+
+	if users.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound, 
+			"message": "No ID found!"})
+			return
+		}
+	   
+	db.Model(&users).Update(&updatedUser)
 	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "User update successfully!",
-		"errors":  err,
-	})
+		"status": http.StatusOK,
+		 "message": "User updated successfully!"})
 }
 
 // DeleteUser function to handle user deletion
