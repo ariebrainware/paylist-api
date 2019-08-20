@@ -13,7 +13,7 @@ import (
 // fun TestFetchSingleUser Functional Testing for FetchSingleUser
 func TestFetchSingleUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	req, err := http.NewRequest("GET", "/users/16", nil)
+	req, err := http.NewRequest("GET", "/users/31", nil)
     if err != nil {
         fmt.Println(err)
 	}
@@ -23,7 +23,7 @@ func TestFetchSingleUser(t *testing.T) {
     router.ServeHTTP(resp, req)
 	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 }
@@ -41,7 +41,7 @@ func TestFetchAllUser(t *testing.T) {
     router.ServeHTTP(resp, req)
 	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 }
@@ -49,37 +49,35 @@ func TestFetchAllUser(t *testing.T) {
 // fun TestCreateUser Functional Testing for CreateUser
 func TestCreateUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	body := bytes.NewBuffer([]byte("{\"email\":\"offler11@gmail.com\",\"name\":\"offler d\",\"username\":\"offler\",\"password\":\"123\"}"))
-	
+	body := bytes.NewBuffer([]byte("{\"username\":\"offler\",\"password\":\"123\",\"email\":\"offler11@gmail.com\",\"name\":\"offler d\"}"))
 	req, err := http.NewRequest("POST", "/users/signup", body)
-	
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
-		t.Errorf("Create user failed with error %d.", err)
+		fmt.Println(err)
 	}
 	router := gin.Default()
-	router.POST("/users/signup", CreateUser)
 	resp := httptest.NewRecorder()
+	router.POST("/users/signup", CreateUser)
 	router.ServeHTTP(resp, req)
-	
 	if resp.Code != 201 {
-		t.Errorf("/users/signup failed with error code %d.", resp.Code)
-  	}
+		t.Errorf("router returned wrong status code: got %d", resp.Code)
+	}
 }
 
 // fun TestDeleteUser Functional Testing for DeleteUser
 func TestDeleteUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	req, err := http.NewRequest("DELETE", "/users/29", nil)
+	req, err := http.NewRequest("DELETE", "/users/33", nil)
 	if err != nil {
-		t.Errorf("failed with error code %d", err)
+		fmt.Println(err)
 	}
 	router := gin.Default()
 	router.DELETE("/users/:id", DeleteUser)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	if resp.Code != 200 {
-		t.Errorf("Failed delete user with error code %d", resp.Code)
+	if status := resp.Code; status != http.StatusOK {
+		t.Errorf("router returned wrong status code: got %v want %v",
+			status, http.StatusOK)
 	}
 }
 // fun TestUpdateUser Functional Testing for UpdateUser
@@ -87,18 +85,16 @@ func TestUpdateUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	body := bytes.NewBuffer([]byte("{\"username\":\"offler\",\"password\":\"123\",\"email\":\"offler11@gmail.com\",\"name\":\"offler d\"}"))
 	req, err := http.NewRequest("PUT", "/users/31", body)
-	//req.Header.Set("Content-Type", "application/json")
-	
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
-		t.Errorf("failed update with error code %d", err)
+		fmt.Println(err)
 	}
-	
 	router := gin.Default()
 	resp := httptest.NewRecorder()
 	router.PUT("/users/:id", UpdateUser)
 	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 }
@@ -106,7 +102,7 @@ func TestUpdateUser(t *testing.T) {
 // fun TestFetchSinglePaylist Functional Testing for FetchSinglePaylist
 func TestFetchSinglePaylist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	req, err := http.NewRequest("GET", "/paylist/2", nil)
+	req, err := http.NewRequest("GET", "/paylist/1", nil)
     if err != nil {
         fmt.Println(err)
 	}
@@ -116,7 +112,7 @@ func TestFetchSinglePaylist(t *testing.T) {
     router.ServeHTTP(resp, req)
 	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 }
@@ -134,7 +130,7 @@ func TestFetchAllPaylist(t *testing.T) {
     router.ServeHTTP(resp, req)
 	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 }
@@ -142,37 +138,36 @@ func TestFetchAllPaylist(t *testing.T) {
 // fun TestCreate Functional Testing for Create User
 func TestCreatePaylist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	body := bytes.NewBuffer([]byte(`{"name":"powerbank","amount":500000}`))
-	
-	req, err := http.NewRequest("POST", "/paylist", body)
-	
-	req.Header.Set("Content-Type", "application/json")
+	var body = []byte(`{"name":"powerbank","amount":"500000"}`)
+	req, err := http.NewRequest("POST", "/paylist", bytes.NewBuffer(body))
 	if err != nil {
-		t.Errorf("Create paylist failed with error %d.", err)
+		t.Fatal(err)
 	}
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
 	router := gin.Default()
 	router.POST("/paylist", CreatePaylist)
-	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	
 	if resp.Code != 201 {
-		t.Errorf("/users/signup failed with error code %d.", resp.Code)
-  	}
+		t.Errorf("router returned wrong status code: got %d",
+			resp.Code)
+	}
 }
 
 // fun TestDeletePaylist Functional Testing for Delete Paylist
 func TestDeletePaylist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	req, err := http.NewRequest("DELETE", "/paylist/5", nil)
+	req, err := http.NewRequest("DELETE", "/paylist/18", nil)
 	if err != nil {
-		t.Errorf("failed with error code %d", err)
+		fmt.Println(err)
 	}
 	router := gin.Default()
 	router.DELETE("/paylist/:id", DeletePaylist)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	if resp.Code != 200 {
-		t.Errorf("Failed delete user with error code %d", resp.Code)
+	if status := resp.Code; status != http.StatusOK {
+		t.Errorf("router returned wrong status code: got %v want %v",
+			status, http.StatusOK)
 	}
 }
 
@@ -180,16 +175,14 @@ func TestDeletePaylist(t *testing.T) {
 func TestUpdatePaylist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	body := bytes.NewBuffer([]byte("{\"name\":\"ayam\",\"amount\": 20000}"))
-	req, err := http.NewRequest("PUT", "/paylist/2", body)
-	//req.Header.Set("Content-Type", "application/json")
-	
+	req, err := http.NewRequest("PUT", "/paylist/3", body)
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
-		t.Errorf("failed update with error code %d", err)
+		fmt.Println(err)
 	}
-	
 	router := gin.Default()
-	resp := httptest.NewRecorder()
 	router.PUT("/paylist/:id", UpdatePaylist)
+	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
@@ -197,8 +190,20 @@ func TestUpdatePaylist(t *testing.T) {
 	}
 }
 
-
+//func TestLogin Functional Testing for Login User
 func TestLogin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+	body := bytes.NewBuffer([]byte("{\"username\":\"jenkins\",\"password\":\"jenkins123\"}"))
+	req, err := http.NewRequest("POST", "/users/signin", body)
+	req.Header.Set("Content-Type", "application/json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	router := gin.Default()
+	resp := httptest.NewRecorder()
+	router.POST("/users/signin", Login)
+	router.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Errorf("router returned wrong status code: got %d", resp.Code)
+	}
 }
