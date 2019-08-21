@@ -1,0 +1,12 @@
+{
+    "Db": {
+        "Host": "localhost",
+        "User": "coba",
+        "Password": "admin123",
+        "Database": "paylist"
+    },
+    "Listen": {
+        "Address": "*",
+        "Port": "3306"
+    }
+}
