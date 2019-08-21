@@ -76,25 +76,26 @@ func FetchSinglePaylist(c *gin.Context) {
 
 // UpdatePaylist update a paylist
 func UpdatePaylist(c *gin.Context) {
+	var paylist model.Paylist
 	id, _ := strconv.Atoi(c.Param("id"))
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	updatedPaylist := model.Paylist{
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	err := db.Model(&model.Paylist{}).Where("ID = ?", id).Update(&updatedPaylist).Error
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusOK,
-			"message": "Paylist updated successfully!",
-			"errors":  err,
-		})
-	}
+	db.First(&paylist, id)
+
+	if paylist.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound, 
+			"message": "No ID found!"})
+			return
+		}
+	   
+	db.Model(&paylist).Update(&updatedPaylist)
 	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "Paylist updated successfully!",
-		"errors":  err,
-	})
+		"status": http.StatusOK,
+		 "message": "Paylist updated successfully!"})
 }
 
 // DeletePaylist remove a paylist
