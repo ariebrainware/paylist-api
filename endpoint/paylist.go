@@ -1,17 +1,15 @@
-package endpoints
+package endpoint
 
 import (
 	"fmt"
 	"net/http"
 	"strconv"
 
-	//"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	
+
 	"github.com/ariebrainware/paylist-api/model"
-	
 )
 
 var db *gorm.DB
@@ -31,7 +29,7 @@ func init() {
 	fmt.Println("Schema migrated!!")
 }
 
-//CreatePaylist
+// CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	paylist := model.Paylist{
@@ -66,9 +64,9 @@ func FetchAllPaylist(c *gin.Context) {
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	db.First(&model.Paylist{}, paylistID)
+	err := db.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
-	if paylist.ID == 0 {
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
 		return
 	}
@@ -76,30 +74,31 @@ func FetchSinglePaylist(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
 }
 
-//UpdatePaylists update a paylist
+// UpdatePaylist update a paylist
 func UpdatePaylist(c *gin.Context) {
+	var paylist model.Paylist
 	id, _ := strconv.Atoi(c.Param("id"))
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	updatedPaylist := model.Paylist{
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	err := db.Model(&model.Paylist{}).Where("ID = ?", id).Update(&updatedPaylist).Error
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusOK,
-			"message": "Paylist updated successfully!",
-			"errors":  err,
-		})
-	}
+	db.First(&paylist, id)
+
+	if paylist.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound, 
+			"message": "No ID found!"})
+			return
+		}
+	   
+	db.Model(&paylist).Update(&updatedPaylist)
 	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "Paylist updated successfully!",
-		"errors":  err,
-	})
+		"status": http.StatusOK,
+		 "message": "Paylist updated successfully!"})
 }
 
-//DeletePaylist remove a paylist
+// DeletePaylist remove a paylist
 func DeletePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
