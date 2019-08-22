@@ -2,12 +2,13 @@ package main
 
 import (
 	"net/http"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	ep "github.com/ariebrainware/paylist-api/endpoint"
+	"github.com/ariebrainware/paylist-api/configdb"
 )
+
 
 type endpoint struct {
 	Method      string
@@ -16,9 +17,9 @@ type endpoint struct {
 }
 
 func main() {
+	configdb.Conf()
 	router := gin.Default()
 	router.Use(cors.Default())
-
 	listEndpoint := []endpoint{
 		//Paylist Endpoint
 		{Method: "GET", URL: "/paylist", Description: "Get/Fetch All Paylist Data"},

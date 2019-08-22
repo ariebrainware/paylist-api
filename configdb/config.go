@@ -24,8 +24,12 @@ type Config struct {
 	}
 }
 
-var config Config
+var (
+	config Config
+	DB *gorm.DB
+) 
 
+//func Conf Database configuration using json file
 func Conf() {
 	c := flag.String("c","configdb/config.json", "Specify the file configuration.")
 	flag.Parse()
@@ -40,12 +44,12 @@ func Conf() {
 		log.Fatal("can't decode config json", err)
 	}
 	log.Println(config.Db.Database)
-	connString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.Db.User, config.Db.Password, config.Db.Host, config.Listen.Port, config.Db.Database)
-	db, err := gorm.Open("mysql", connString)
+	connString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", config.Db.User, config.Db.Password, config.Db.Host, config.Listen.Port, config.Db.Database)
+	DB, err = gorm.Open("mysql", connString)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	db.AutoMigrate(&model.Paylist{})
-	db.AutoMigrate(&model.User{})
+	DB.AutoMigrate(&model.Paylist{})
+	DB.AutoMigrate(&model.User{})
 	fmt.Println("Schema migrated!!")
 }

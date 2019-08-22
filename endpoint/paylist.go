@@ -6,29 +6,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-
+	"github.com/ariebrainware/paylist-api/configdb"
 	"github.com/ariebrainware/paylist-api/model"
 )
-
-var db *gorm.DB
-
-func init() {
-	var err error
-
-	//connString := "userdb:passworddb/databasename?charset=utf8&parseTime=True&loc=Local"
-	connString := "coba:admin123@tcp(localhost:3306)/paylist?charset=utf8&parseTime=True&loc=Local"
-	db, err = gorm.Open("mysql", connString)
-	if err != nil {
-		panic("Failed to connect database")
-	}
-
-	db.AutoMigrate(&model.Paylist{})
-	db.AutoMigrate(&model.User{})
-	fmt.Println("Schema migrated!!")
-}
-
+var conf configdb.Config
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
@@ -39,7 +20,7 @@ func CreatePaylist(c *gin.Context) {
 	fmt.Println(c.PostForm("name"))
 	fmt.Println(amount)
 
-	db.Save(&paylist)
+	configdb.DB.Save(&paylist)
 	c.JSON(http.StatusCreated, gin.H{
 		"status":     http.StatusCreated,
 		"message":    "Paylist item created successfully!",
@@ -50,21 +31,21 @@ func CreatePaylist(c *gin.Context) {
 //FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
-	db.Find(&paylist)
+	configdb.DB.Find(&paylist)
 
 	if len(paylist) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
-
+	
 }
 
 //FetchSinglePaylist fetch a single paylist
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	err := db.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
+	err := configdb.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
@@ -83,7 +64,7 @@ func UpdatePaylist(c *gin.Context) {
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	db.First(&paylist, id)
+	configdb.DB.First(&paylist, id)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -92,7 +73,7 @@ func UpdatePaylist(c *gin.Context) {
 			return
 		}
 	   
-	db.Model(&paylist).Update(&updatedPaylist)
+	configdb.DB.Model(&paylist).Update(&updatedPaylist)
 	c.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 		 "message": "Paylist updated successfully!"})
@@ -103,12 +84,12 @@ func DeletePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
 
-	db.First(&paylist, paylistID)
+	configdb.DB.First(&paylist, paylistID)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No paylist found!"})
 		return
 	}
-	db.Delete(&paylist)
+	configdb.DB.Delete(&paylist)
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Paylist deleted successfully!"})
 }

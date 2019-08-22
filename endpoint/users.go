@@ -3,13 +3,14 @@ package endpoint
 import (
 	"fmt"
 	"net/http"
-	//"strconv"
 	"time"
 
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/ariebrainware/paylist-api/configdb"
+	
 )
 
 // Token is a struct for token model
@@ -53,7 +54,7 @@ func CreateUser(c *gin.Context) {
 		})
 	}
 	users.Password = string(password)
-	db.Save(&users)
+	configdb.DB.Save(&users)
 	c.JSON(http.StatusCreated, gin.H{
 		"status":      http.StatusCreated,
 		"message":     "User created Successfully!",
@@ -65,7 +66,7 @@ func CreateUser(c *gin.Context) {
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	db.Find(&users)
+	configdb.DB.Find(&users)
 
 	if len(users) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
@@ -96,7 +97,7 @@ func UpdateUser(c *gin.Context) {
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
-	db.First(&users, ID)
+	configdb.DB.First(&users, ID)
 
 	if users.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -105,7 +106,7 @@ func UpdateUser(c *gin.Context) {
 			return
 		}
 	   
-	db.Model(&users).Update(&updatedUser)
+	configdb.DB.Model(&users).Update(&updatedUser)
 	c.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 		 "message": "User updated successfully!"})
@@ -116,14 +117,14 @@ func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
 
-	db.First(&users, usersID)
+	configdb.DB.First(&users, usersID)
 
 	if users.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "No user found!"})
 		return
 	}
-	db.Delete(&users)
+	configdb.DB.Delete(&users)
 	c.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK, "message": "User Delete succcessfully!"})
 }
@@ -132,7 +133,7 @@ func DeleteUser(c *gin.Context) {
 func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	err := db.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
+	err := configdb.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
@@ -163,7 +164,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	err := db.Where("username = ?", username).First(&user).Error
+	err := configdb.DB.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
