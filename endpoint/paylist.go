@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/ariebrainware/paylist-api/configdb"
 	"github.com/ariebrainware/paylist-api/model"
+	"github.com/gin-gonic/gin"
 )
+
 var conf configdb.Config
+
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
@@ -38,7 +40,7 @@ func FetchAllPaylist(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
-	
+
 }
 
 //FetchSinglePaylist fetch a single paylist
@@ -68,15 +70,15 @@ func UpdatePaylist(c *gin.Context) {
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
+			"status":  http.StatusNotFound,
 			"message": "No ID found!"})
-			return
-		}
-	   
+		return
+	}
+
 	configdb.DB.Model(&paylist).Update(&updatedPaylist)
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
-		 "message": "Paylist updated successfully!"})
+		"status":  http.StatusOK,
+		"message": "Paylist updated successfully!"})
 }
 
 // DeletePaylist remove a paylist
