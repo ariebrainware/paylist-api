@@ -6,7 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"github.com/ariebrainware/paylist-api/configdb"
+	"github.com/ariebrainware/paylist-api/config"
 	ep "github.com/ariebrainware/paylist-api/endpoint"
 )
 
@@ -17,7 +17,7 @@ type endpoint struct {
 }
 
 func main() {
-	configdb.Conf()
+	config.Conf()
 	router := gin.Default()
 	router.Use(cors.Default())
 	listEndpoint := []endpoint{

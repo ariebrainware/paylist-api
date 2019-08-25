@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ariebrainware/paylist-api/configdb"
+	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
 	"github.com/gin-gonic/gin"
 )
 
-var conf configdb.Config
+var conf config.Config
 
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
@@ -22,7 +22,7 @@ func CreatePaylist(c *gin.Context) {
 	fmt.Println(c.PostForm("name"))
 	fmt.Println(amount)
 
-	configdb.DB.Save(&paylist)
+	config.DB.Save(&paylist)
 	c.JSON(http.StatusCreated, gin.H{
 		"status":     http.StatusCreated,
 		"message":    "Paylist item created successfully!",
@@ -33,7 +33,7 @@ func CreatePaylist(c *gin.Context) {
 //FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
-	configdb.DB.Find(&paylist)
+	config.DB.Find(&paylist)
 
 	if len(paylist) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
@@ -47,7 +47,7 @@ func FetchAllPaylist(c *gin.Context) {
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	err := configdb.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
+	err := config.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
@@ -66,7 +66,7 @@ func UpdatePaylist(c *gin.Context) {
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	configdb.DB.First(&paylist, id)
+	config.DB.First(&paylist, id)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -75,7 +75,7 @@ func UpdatePaylist(c *gin.Context) {
 		return
 	}
 
-	configdb.DB.Model(&paylist).Update(&updatedPaylist)
+	config.DB.Model(&paylist).Update(&updatedPaylist)
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Paylist updated successfully!"})
@@ -86,12 +86,12 @@ func DeletePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
 
-	configdb.DB.First(&paylist, paylistID)
+	config.DB.First(&paylist, paylistID)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No paylist found!"})
 		return
 	}
-	configdb.DB.Delete(&paylist)
+	config.DB.Delete(&paylist)
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Paylist deleted successfully!"})
 }

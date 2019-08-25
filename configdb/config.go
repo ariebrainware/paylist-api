@@ -1,4 +1,4 @@
-package configdb
+package config
 
 import (
 	"encoding/json"
@@ -30,9 +30,9 @@ var (
 	DB     *gorm.DB
 )
 
-//func Conf Database configuration using json file
+// Conf Database configuration using json file
 func Conf() {
-	c := flag.String("c", "configdb/config.json", "Specify the file configuration.")
+	c := flag.String("c", "config/config.json", "Specify the file configuration.")
 	flag.Parse()
 	file, err := os.Open(*c)
 	if err != nil {
