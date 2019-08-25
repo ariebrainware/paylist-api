@@ -2,13 +2,13 @@ package main
 
 import (
 	"net/http"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	ep "github.com/ariebrainware/paylist-api/endpoint"
 	"github.com/ariebrainware/paylist-api/configdb"
+	ep "github.com/ariebrainware/paylist-api/endpoint"
 )
-
 
 type endpoint struct {
 	Method      string

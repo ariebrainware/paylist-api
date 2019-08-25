@@ -5,12 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ariebrainware/paylist-api/configdb"
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/ariebrainware/paylist-api/configdb"
-	
 )
 
 // Token is a struct for token model
@@ -92,8 +91,8 @@ func UpdateUser(c *gin.Context) {
 	var users model.User
 	ID := c.Param("id")
 	updatedUser := model.User{
-		Email : c.PostForm("email"),
-		Name:   c.PostForm("name"),
+		Email:    c.PostForm("email"),
+		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
@@ -101,15 +100,15 @@ func UpdateUser(c *gin.Context) {
 
 	if users.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
+			"status":  http.StatusNotFound,
 			"message": "No ID found!"})
-			return
-		}
-	   
+		return
+	}
+
 	configdb.DB.Model(&users).Update(&updatedUser)
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
-		 "message": "User updated successfully!"})
+		"status":  http.StatusOK,
+		"message": "User updated successfully!"})
 }
 
 // DeleteUser function to handle user deletion
@@ -213,7 +212,7 @@ func Login(c *gin.Context) {
 
 // Auth function authorization to handle authorized
 func Auth(c *gin.Context) {
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
 			return nil, fmt.Errorf("unexpected SigningMethod :%v", token.Header["alg"])
