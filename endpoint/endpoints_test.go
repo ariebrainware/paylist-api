@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	//"gopkg.in/go-playground/assert.v1"
-	
+	"github.com/gin-gonic/gin"	
 )
 // fun TestFetchSingleUser Functional Testing for FetchSingleUser
 func TestFetchSingleUser(t *testing.T) {
@@ -21,7 +19,6 @@ func TestFetchSingleUser(t *testing.T) {
     router.GET("/users/:id", FetchSingleUser)
     resp := httptest.NewRecorder()
     router.ServeHTTP(resp, req)
-	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -39,7 +36,6 @@ func TestFetchAllUser(t *testing.T) {
     router.GET("/users", FetchAllUser)
     resp := httptest.NewRecorder()
     router.ServeHTTP(resp, req)
-	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)

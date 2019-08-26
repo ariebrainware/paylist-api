@@ -51,5 +51,6 @@ func Conf() {
 	}
 	DB.AutoMigrate(&model.Paylist{})
 	DB.AutoMigrate(&model.User{})
+	DB.Model(&model.Paylist{}).AddForeignKey("username", "User(username)", "CASCADE", "CASCADE")
 	fmt.Println("Schema migrated!!")
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"strconv"
 
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
@@ -15,7 +16,7 @@ import (
 
 // Token is a struct for token model
 type Token struct {
-	ID uint
+	Username string
 	jwt.StandardClaims
 }
 
@@ -27,15 +28,18 @@ type user1 struct {
 	Email     string     `json:"email"`
 	Name      string     `json:"name"`
 	Username  string     `json:"username"`
+	Balance int `json:"balance"`
 }
 
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
+	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	users := model.User{
 		Email:    c.PostForm("email"),
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
+		Balance: balance,
 	}
 	fmt.Println(c.PostForm("email"))
 	fmt.Println(c.PostForm("name"))
@@ -82,6 +86,7 @@ func FetchAllUser(c *gin.Context) {
 			Email:     item.Email,
 			Name:      item.Name,
 			Username:  item.Username,
+			Balance: item.Balance,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
@@ -91,11 +96,13 @@ func FetchAllUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	var users model.User
 	ID := c.Param("id")
+	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	updatedUser := model.User{
 		Email : c.PostForm("email"),
 		Name:   c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
+		Balance: balance,
 	}
 	configdb.DB.First(&users, ID)
 
@@ -147,6 +154,7 @@ func FetchSingleUser(c *gin.Context) {
 		Email:     users.Email,
 		Name:      users.Name,
 		Username:  users.Username,
+		Balance : users.Balance,
 	}
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
 }
@@ -168,12 +176,11 @@ func Login(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
-			"message": "wrong username or password"})
+			"message": "wrong username"})
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	fmt.Println(user.Password)
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
@@ -183,7 +190,7 @@ func Login(c *gin.Context) {
 	}
 
 	tk := &Token{
-		ID: user.ID,
+		Username: user.Username,
 	}
 	//Create JWT token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
@@ -194,7 +201,7 @@ func Login(c *gin.Context) {
 		})
 		c.Abort()
 	}
-
+	configdb.DB.Save(&user)
 	users := &user1{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
