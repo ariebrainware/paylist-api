@@ -138,25 +138,29 @@ func DeletePaylist(c *gin.Context) {
 }
 
 func Coba(c *gin.Context) {
-	//var paylist model.Paylist
+	var paylist model.Paylist
 	var users model.User
 	var sisa int
+	id := c.Param("id")
+
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
 		return []byte("secret"), nil
 	}) 
 	log.Println(token.Valid, tk, err)
+	
 	username := tk.Username
-
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
-	configdb.DB.Table("users").Select("balance").Where("username  = ?", username).First(&users)
-	fmt.Println(users.Balance)
-	if users.Balance > amount {
+	eror:= configdb.DB.Table("users").Select("balance").Where("username  = ?", username).First(&users).Error
+	if eror != nil{
+		fmt.Println(eror)
+	}
+	if users.Balance >= amount {
 		sisa = users.Balance - amount
-	 } else {
-		fmt.Println("Saldo Anda Kurang!")
-	 }
+		 paylist.Completed = 1
+		configdb.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
+	}
 	users.Balance = sisa
 	configdb.DB.Model(&users).Where("username = ?", username).Update(&users)
 	fmt.Println("sisa", sisa)
@@ -166,6 +170,7 @@ func Coba2(c *gin.Context){
 	var paylist model.Paylist
 	var user model.User
 	var balance int
+	id := c.Param("id")
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
@@ -173,8 +178,8 @@ func Coba2(c *gin.Context){
 	}) 
 	log.Println(token.Valid, tk, err)
 	username := tk.Username
-	configdb.DB.Table("paylists").Select("amount").Where("username  = ?", username).Find(&paylist)
-	configdb.DB.Table("users").Select("balance").Where("username  = ?", username).Find(&user)
+	configdb.DB.Table("paylists").Select("amount").Where("ID = ? and username = ?",id, username).Find(&paylist)
+	configdb.DB.Table("users").Select("balance").Where("username = ?", username).Find(&user)
 	fmt.Println(paylist.Amount)
 	fmt.Println(user.Balance)
 	balance = paylist.Amount + user.Balance

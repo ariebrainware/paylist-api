@@ -1,10 +1,12 @@
 package endpoint
 
 import (
+	//"github.com/jinzhu/gorm"
 	"fmt"
 	"net/http"
 	"time"
 	"strconv"
+	//u "io/ioutils"
 
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
@@ -41,10 +43,10 @@ func CreateUser(c *gin.Context) {
 		Password: c.PostForm("password"),
 		Balance: balance,
 	}
-	fmt.Println(c.PostForm("email"))
-	fmt.Println(c.PostForm("name"))
-	fmt.Println(c.PostForm("username"))
-	fmt.Println(c.PostForm("password"))
+	// fmt.Println(c.PostForm("email"))
+	// fmt.Println(c.PostForm("name"))
+	// fmt.Println(c.PostForm("username"))
+	// fmt.Println(c.PostForm("password"))
 
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
@@ -57,13 +59,25 @@ func CreateUser(c *gin.Context) {
 			"message": "password encryption success!",
 		})
 	}
+	var exists model.User
+	if err := configdb.DB.Where("username = ?", users.Username).First(&exists).Error; err == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"message": "username already exist",
+		})
+		return
+	}
 	users.Password = string(password)
-	configdb.DB.Save(&users)
+	eror := configdb.DB.Save(&users).Error
+	if eror != nil {
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"message": "failed to sign up",
+		})
+	}
 	c.JSON(http.StatusCreated, gin.H{
 		"status":      http.StatusCreated,
 		"message":     "User created Successfully!",
 		"resourcedId": users.ID,
-	})
+		})
 }
 
 // FetchAllUser function to get list of users
@@ -238,3 +252,9 @@ func Auth(c *gin.Context) {
 		c.Abort()
 	}
 }
+
+// func Logout(c *gin.Context){
+// 	session := sessions.Default()
+// 	user := session.
+
+// }
