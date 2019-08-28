@@ -7,11 +7,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/ariebrainware/paylist-api/model"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
+// Config is a configuration model
 type Config struct {
 	Db struct {
 		Host     string
@@ -27,7 +27,8 @@ type Config struct {
 
 var (
 	config Config
-	DB     *gorm.DB
+	// DB is a exported connection
+	DB *gorm.DB
 )
 
 // Conf Database configuration using json file
@@ -50,7 +51,4 @@ func Conf() {
 	if err != nil {
 		panic("failed connect to database")
 	}
-	DB.AutoMigrate(&model.Paylist{})
-	DB.AutoMigrate(&model.User{})
-	fmt.Println("Schema migrated!!")
 }

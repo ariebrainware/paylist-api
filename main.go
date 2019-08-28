@@ -1,13 +1,12 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"github.com/ariebrainware/paylist-api/config"
 	ep "github.com/ariebrainware/paylist-api/endpoint"
+	"github.com/ariebrainware/paylist-api/util"
 )
 
 type endpoint struct {
@@ -37,11 +36,7 @@ func main() {
 	}
 
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  http.StatusOK,
-			"message": "Paylist-API available endpoint",
-			"data":    listEndpoint,
-		})
+		util.CallSuccessOK(c, "Paylist-API available endpoint", listEndpoint)
 	})
 	v1 := router.Group("/v1/paylist/")
 	v1.GET("/paylist", ep.Auth, ep.FetchAllPaylist)

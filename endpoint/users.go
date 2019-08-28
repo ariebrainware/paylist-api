@@ -10,6 +10,8 @@ import (
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/ariebrainware/paylist-api/util"
 )
 
 // Token is a struct for token model
@@ -167,17 +169,13 @@ func Login(c *gin.Context) {
 
 	user := &model.User{}
 	if username == "" || password == "" {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "please provide username and password"})
+		util.CallErrorNotFound(c, "Please provide username and password", nil)
 		return
 	}
 
-	err := config.DB.Where("username = ?", username).First(&user).Error
+	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "wrong username or password"})
+		util.CallErrorNotFound(c, "Wrong username or password", err)
 		return
 	}
 

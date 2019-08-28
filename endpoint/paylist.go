@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
-	"github.com/gin-gonic/gin"
+	"github.com/ariebrainware/paylist-api/util"
 )
 
 var conf config.Config
@@ -22,13 +24,13 @@ func CreatePaylist(c *gin.Context) {
 	fmt.Println(c.PostForm("name"))
 	fmt.Println(amount)
 
-	err := configdb.DB.Save(&paylist).Error
+	err := config.DB.Save(&paylist).Error
 	if err != nil {
-		fmt.Println(err)
+		util.CallSuccessOK(c, "Paylist item created successfully!", paylist.ID)
 	}
-	c.JSON(http.StatusCreated, gin.H{
-		"status":     http.StatusCreated,
-		"message":    "Paylist item created successfully!",
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"status":     http.StatusInternalServerError,
+		"message":    "Fail to create paylist",
 		"resourceId": paylist.ID,
 	})
 }
@@ -58,9 +60,9 @@ func FetchSinglePaylist(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
+			"status":  http.StatusNotFound,
 			"message": "No paylist found!",
-			"error": err,
+			"error":   err,
 		})
 		return
 	}
@@ -82,21 +84,21 @@ func UpdatePaylist(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  http.StatusNotFound,
 			"message": "No ID found!"})
-			return
-		}
-	   
-	err:= configdb.DB.Model(&paylist).Update(&updatedPaylist).Error
+		return
+	}
+
+	err := config.DB.Model(&paylist).Update(&updatedPaylist).Error
 	if err != nil {
 		c.JSON(http.StatusNotImplemented, gin.H{
-			"status": http.StatusNotImplemented,
+			"status":  http.StatusNotImplemented,
 			"message": "Failed update paylist!",
-			"error": err,
+			"error":   err,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
+		"status":  http.StatusOK,
 		"message": "Paylist updated successfully!",
-		"data": paylist,
+		"data":    paylist,
 	})
 }
 
@@ -112,11 +114,11 @@ func DeletePaylist(c *gin.Context) {
 			"message": "No paylist found!"})
 		return
 	}
-	err:=configdb.DB.Delete(&paylist).Error
+	err := config.DB.Delete(&paylist).Error
 	if err != nil {
 		fmt.Println(err)
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
+		"status":  http.StatusOK,
 		"message": "Paylist deleted successfully!"})
 }
