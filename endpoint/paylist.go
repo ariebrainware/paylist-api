@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
-	"github.com/ariebrainware/paylist-api/configdb"
+	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
+	"github.com/gin-gonic/gin"
 )
-var conf configdb.Config
+
+var conf config.Config
+
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
@@ -34,7 +36,7 @@ func CreatePaylist(c *gin.Context) {
 //FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
-	configdb.DB.Find(&paylist)
+	config.DB.Find(&paylist)
 
 	if len(paylist) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -52,7 +54,7 @@ func FetchAllPaylist(c *gin.Context) {
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	err := configdb.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
+	err := config.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -74,11 +76,11 @@ func UpdatePaylist(c *gin.Context) {
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	configdb.DB.First(&paylist, id)
+	config.DB.First(&paylist, id)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
+			"status":  http.StatusNotFound,
 			"message": "No ID found!"})
 			return
 		}
@@ -103,7 +105,7 @@ func DeletePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
 
-	configdb.DB.First(&paylist, paylistID)
+	config.DB.First(&paylist, paylistID)
 
 	if paylist.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{

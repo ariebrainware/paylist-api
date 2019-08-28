@@ -5,12 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/ariebrainware/paylist-api/configdb"
-	
 )
 
 // Token is a struct for token model
@@ -73,7 +72,7 @@ func CreateUser(c *gin.Context) {
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	configdb.DB.Find(&users)
+	config.DB.Find(&users)
 
 	if len(users) <= 0 {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
@@ -98,29 +97,23 @@ func UpdateUser(c *gin.Context) {
 	var users model.User
 	ID := c.Param("id")
 	updatedUser := model.User{
-		Email : c.PostForm("email"),
-		Name:   c.PostForm("name"),
+		Email:    c.PostForm("email"),
+		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
-	configdb.DB.First(&users, ID)
+	config.DB.First(&users, ID)
+
 	if users.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
+			"status":  http.StatusNotFound,
 			"message": "No ID found!"})
-			return
-		}
-	   
-	err := configdb.DB.Model(&users).Update(&updatedUser).Error
-	if err != nil {
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"status": http.StatusNotImplemented,
-			 "message": "Failed update user",
-			"error": err,
-		})
+		return
 	}
+
+	config.DB.Model(&users).Update(&updatedUser)
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
+		"status":  http.StatusOK,
 		"message": "User updated successfully!"})
 }
 
@@ -129,7 +122,7 @@ func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
 
-	configdb.DB.First(&users, usersID)
+	config.DB.First(&users, usersID)
 
 	if users.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -149,7 +142,7 @@ func DeleteUser(c *gin.Context) {
 func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	err := configdb.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
+	err := config.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
@@ -180,7 +173,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	err := configdb.DB.Where("username = ?", username).First(&user).Error
+	err := config.DB.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
@@ -229,7 +222,7 @@ func Login(c *gin.Context) {
 
 // Auth function authorization to handle authorized
 func Auth(c *gin.Context) {
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
 			return nil, fmt.Errorf("unexpected SigningMethod :%v", token.Header["alg"])

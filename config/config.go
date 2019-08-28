@@ -1,40 +1,41 @@
-package configdb
+package config
 
 import (
-	"github.com/jinzhu/gorm"
 	"encoding/json"
-	"os"
 	"flag"
-	"log"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/ariebrainware/paylist-api/model"
-	_ "github.com/jinzhu/gorm/dialects/mysql"	
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 type Config struct {
 	Db struct {
-		Host string
-		User string
+		Host     string
+		User     string
 		Password string
 		Database string
 	}
 	Listen struct {
 		Address string
-		Port string
+		Port    string
 	}
 }
 
 var (
 	config Config
-	DB *gorm.DB
-) 
+	DB     *gorm.DB
+)
 
-//func Conf Database configuration using json file
+// Conf Database configuration using json file
 func Conf() {
-	c := flag.String("c","configdb/config.json", "Specify the file configuration.")
+	c := flag.String("c", "config/config.json", "Specify the file configuration.")
 	flag.Parse()
 	file, err := os.Open(*c)
-	if err !=nil {
+	if err != nil {
 		log.Fatal("can't open the file: ", err)
 	}
 	defer file.Close()
