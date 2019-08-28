@@ -47,7 +47,7 @@ func Conf() {
 	connString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", config.Db.User, config.Db.Password, config.Db.Host, config.Listen.Port, config.Db.Database)
 	DB, err = gorm.Open("mysql", connString)
 	if err != nil {
-		fmt.Println(err.Error())
+		panic("failed connect to database")
 	}
 	DB.AutoMigrate(&model.Paylist{})
 	DB.AutoMigrate(&model.User{})

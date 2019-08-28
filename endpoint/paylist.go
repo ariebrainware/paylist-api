@@ -20,7 +20,10 @@ func CreatePaylist(c *gin.Context) {
 	fmt.Println(c.PostForm("name"))
 	fmt.Println(amount)
 
-	configdb.DB.Save(&paylist)
+	err := configdb.DB.Save(&paylist).Error
+	if err != nil {
+		fmt.Println(err)
+	}
 	c.JSON(http.StatusCreated, gin.H{
 		"status":     http.StatusCreated,
 		"message":    "Paylist item created successfully!",
@@ -34,11 +37,15 @@ func FetchAllPaylist(c *gin.Context) {
 	configdb.DB.Find(&paylist)
 
 	if len(paylist) <= 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound,
+			"message": "No paylist found!"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
-	
+	c.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"data": paylist,
+		})	
 }
 
 //FetchSinglePaylist fetch a single paylist
@@ -48,10 +55,13 @@ func FetchSinglePaylist(c *gin.Context) {
 	err := configdb.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound, 
+			"message": "No paylist found!",
+			"error": err,
+		})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
 }
 
@@ -73,10 +83,19 @@ func UpdatePaylist(c *gin.Context) {
 			return
 		}
 	   
-	configdb.DB.Model(&paylist).Update(&updatedPaylist)
+	err:= configdb.DB.Model(&paylist).Update(&updatedPaylist).Error
+	if err != nil {
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"status": http.StatusNotImplemented,
+			"message": "Failed update paylist!",
+			"error": err,
+		})
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
-		 "message": "Paylist updated successfully!"})
+		"message": "Paylist updated successfully!",
+		"data": paylist,
+	})
 }
 
 // DeletePaylist remove a paylist
@@ -87,9 +106,15 @@ func DeletePaylist(c *gin.Context) {
 	configdb.DB.First(&paylist, paylistID)
 
 	if paylist.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No paylist found!"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "No paylist found!"})
 		return
 	}
-	configdb.DB.Delete(&paylist)
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Paylist deleted successfully!"})
+	err:=configdb.DB.Delete(&paylist).Error
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"message": "Paylist deleted successfully!"})
 }

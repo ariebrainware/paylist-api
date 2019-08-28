@@ -54,7 +54,14 @@ func CreateUser(c *gin.Context) {
 		})
 	}
 	users.Password = string(password)
-	configdb.DB.Save(&users)
+	err = configdb.DB.Save(&users).Error
+	if err != nil {
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"status":      http.StatusNotImplemented,
+			"message":     "Failed created user!",
+			"error": err,
+		})
+	}
 	c.JSON(http.StatusCreated, gin.H{
 		"status":      http.StatusCreated,
 		"message":     "User created Successfully!",
@@ -73,7 +80,6 @@ func FetchAllUser(c *gin.Context) {
 		return
 	}
 	for _, item := range users {
-
 		user = append(user, user1{
 			ID:        item.ID,
 			CreatedAt: item.CreatedAt,
@@ -98,7 +104,6 @@ func UpdateUser(c *gin.Context) {
 		Password: c.PostForm("password"),
 	}
 	configdb.DB.First(&users, ID)
-
 	if users.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": http.StatusNotFound, 
@@ -106,10 +111,17 @@ func UpdateUser(c *gin.Context) {
 			return
 		}
 	   
-	configdb.DB.Model(&users).Update(&updatedUser)
+	err := configdb.DB.Model(&users).Update(&updatedUser).Error
+	if err != nil {
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"status": http.StatusNotImplemented,
+			 "message": "Failed update user",
+			"error": err,
+		})
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
-		 "message": "User updated successfully!"})
+		"message": "User updated successfully!"})
 }
 
 // DeleteUser function to handle user deletion
@@ -124,9 +136,13 @@ func DeleteUser(c *gin.Context) {
 			"message": "No user found!"})
 		return
 	}
-	configdb.DB.Delete(&users)
+	err := configdb.DB.Delete(&users).Error
+	if err != nil {
+		fmt.Println(err)
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK, "message": "User Delete succcessfully!"})
+		"status": http.StatusOK,
+		"message": "User Delete succcessfully!"})
 }
 
 // FetchSingleUser function to get single user
