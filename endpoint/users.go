@@ -3,19 +3,20 @@ package endpoint
 import (
 	"fmt"
 	"net/http"
-
-	//"strconv"
 	"time"
 
+	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/ariebrainware/paylist-api/util"
 )
 
 // Token is a struct for token model
 type Token struct {
-	ID uint
+	Username string
 	jwt.StandardClaims
 }
 
@@ -45,35 +46,30 @@ func CreateUser(c *gin.Context) {
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"message": "password encryption failed",
-		})
-		c.JSON(http.StatusCreated, gin.H{
-			"message": "password encryption success!",
-		})
+		util.CallServerError(c, "password encryption failed", err)
+		return
 	}
+	util.CallSuccessOK(c, "password encryption success!", password)
+
 	users.Password = string(password)
-	db.Save(&users)
-	c.JSON(http.StatusCreated, gin.H{
-		"status":      http.StatusCreated,
-		"message":     "User created Successfully!",
-		"resourcedId": users.ID,
-	})
+	err = config.DB.Save(&users).Error
+	if err != nil {
+		util.CallServerError(c, "Failed Create User!", err)
+	}
+	util.CallSuccessOK(c, "User created Successfully!", users.ID)
 }
 
 // FetchAllUser function to get list of users
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	db.Find(&users)
+	config.DB.Find(&users)
 
 	if len(users) <= 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
+		util.CallErrorNotFound(c, "No User Found!", nil)
 		return
 	}
 	for _, item := range users {
-
 		user = append(user, user1{
 			ID:        item.ID,
 			CreatedAt: item.CreatedAt,
@@ -84,7 +80,7 @@ func FetchAllUser(c *gin.Context) {
 			Username:  item.Username,
 		})
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
+	util.CallSuccessOK(c, "Fetch All User Data ", user)
 }
 
 // UpdateUser function to update user information
@@ -97,19 +93,18 @@ func UpdateUser(c *gin.Context) {
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
-	db.First(&users, ID)
+	config.DB.First(&users, ID)
 
 	if users.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "No ID found!"})
+		util.CallErrorNotFound(c, "Paylist not found, make sure to specify the ID", nil)
 		return
 	}
 
-	db.Model(&users).Update(&updatedUser)
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "User updated successfully!"})
+	err := config.DB.Model(&users).Update(&updatedUser).Error
+	if err != nil {
+		util.CallServerError(c, "Failed to update user", err)
+	}
+	util.CallSuccessOK(c, "User successfully updated!", users)
 }
 
 // DeleteUser function to handle user deletion
@@ -117,26 +112,28 @@ func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
 
-	db.First(&users, usersID)
+	config.DB.First(&users, usersID)
 
 	if users.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "No user found!"})
+		util.CallErrorNotFound(c, "user not found", nil)
 		return
 	}
-	db.Delete(&users)
-	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK, "message": "User Delete succcessfully!"})
+	err := config.DB.Delete(&users).Error
+	if err != nil {
+		util.CallServerError(c, "failed to delete user", err)
+		return
+	}
+	util.CallSuccessOK(c, "user delete succcessfully!", nil)
 }
 
 // FetchSingleUser function to get single user
 func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	err := db.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
+	err := config.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
+		util.CallErrorNotFound(c, "no user found", nil)
 		return
 	}
 	user := &user1{
@@ -148,7 +145,7 @@ func FetchSingleUser(c *gin.Context) {
 		Name:      users.Name,
 		Username:  users.Username,
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
+	util.CallSuccessOK(c, "success fetch single data", user)
 }
 
 // Login function to handle login user
@@ -158,57 +155,34 @@ func Login(c *gin.Context) {
 
 	user := &model.User{}
 	if username == "" || password == "" {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "please provide username and password"})
+		util.CallErrorNotFound(c, "please provide username and password", nil)
 		return
 	}
 
-	err := db.Where("username = ?", username).First(&user).Error
+	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "wrong username or password"})
+		util.CallErrorNotFound(c, "wrong username or password", err)
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	fmt.Println(user.Password)
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "wrong password or password doesn't match",
-		})
+		util.CallErrorNotFound(c, "wrong password or password doesn't match", errf)
 		return
 	}
 
 	tk := &Token{
-		ID: user.ID,
+		Username: user.Username,
 	}
 	//Create JWT token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, err := token.SignedString([]byte("secret"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		util.CallServerError(c, "error create token", err)
 		c.Abort()
 	}
-
-	users := &user1{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		DeletedAt: user.DeletedAt,
-		Email:     user.Email,
-		Name:      user.Name,
-		Username:  user.Username,
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": "logged in",
-		"token":   tokenString,
-		"user":    users,
-	})
+	util.CallSuccessOK(c, "logged in", tokenString)
 }
 
 // Auth function authorization to handle authorized

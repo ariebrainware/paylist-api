@@ -2,32 +2,16 @@ package endpoint
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 
+	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
+	"github.com/ariebrainware/paylist-api/util"
 )
 
-var db *gorm.DB
-
-func init() {
-	var err error
-
-	//connString := "userdb:passworddb/databasename?charset=utf8&parseTime=True&loc=Local"
-	connString := "coba:admin123@tcp(localhost:3306)/paylist?charset=utf8&parseTime=True&loc=Local"
-	db, err = gorm.Open("mysql", connString)
-	if err != nil {
-		panic("Failed to connect database")
-	}
-
-	db.AutoMigrate(&model.Paylist{})
-	db.AutoMigrate(&model.User{})
-	fmt.Println("Schema migrated!!")
-}
+var conf config.Config
 
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
@@ -37,41 +21,37 @@ func CreatePaylist(c *gin.Context) {
 		Amount: amount,
 	}
 	fmt.Println(c.PostForm("name"))
-	fmt.Println(amount)
 
-	db.Save(&paylist)
-	c.JSON(http.StatusCreated, gin.H{
-		"status":     http.StatusCreated,
-		"message":    "Paylist item created successfully!",
-		"resourceId": paylist.ID,
-	})
+	err := config.DB.Save(&paylist).Error
+	if err != nil {
+		util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
+	}
+	util.CallServerError(c, "fail to create paylist", err)
 }
 
 //FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
-	db.Find(&paylist)
+	config.DB.Find(&paylist)
 
 	if len(paylist) <= 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
+		util.CallErrorNotFound(c, "no paylist found!", nil)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
-
+	util.CallSuccessOK(c, "fetched all paylist", paylist)
 }
 
 //FetchSinglePaylist fetch a single paylist
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	err := db.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
+	err := config.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
+		util.CallErrorNotFound(c, "no paylist found!", err)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
+	util.CallSuccessOK(c, "success fetch single paylist", paylist)
 }
 
 // UpdatePaylist update a paylist
@@ -83,19 +63,18 @@ func UpdatePaylist(c *gin.Context) {
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	db.First(&paylist, id)
+	config.DB.First(&paylist, id)
 
 	if paylist.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
-			"message": "No ID found!"})
-			return
-		}
-	   
-	db.Model(&paylist).Update(&updatedPaylist)
-	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
-		 "message": "Paylist updated successfully!"})
+		util.CallErrorNotFound(c, "paylist not found, make sure to specify the ID", nil)
+		return
+	}
+
+	err := config.DB.Model(&paylist).Update(&updatedPaylist).Error
+	if err != nil {
+		util.CallServerError(c, "failed to update the paylist", err)
+	}
+	util.CallSuccessOK(c, "paylist successfully updated!", paylist)
 }
 
 // DeletePaylist remove a paylist
@@ -103,12 +82,16 @@ func DeletePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
 
-	db.First(&paylist, paylistID)
+	config.DB.First(&paylist, paylistID)
 
 	if paylist.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No paylist found!"})
+		util.CallErrorNotFound(c, "no paylist found!", nil)
 		return
 	}
-	db.Delete(&paylist)
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Paylist deleted successfully!"})
+	err := config.DB.Delete(&paylist).Error
+	if err != nil {
+		util.CallServerError(c, "failed to Delete Paylist", err)
+		return
+	}
+	util.CallSuccessOK(c, "paylist deleted successfully!", nil)
 }
