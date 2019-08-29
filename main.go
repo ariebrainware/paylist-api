@@ -1,14 +1,13 @@
 package main
 
 import (
-	"net/http"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/ariebrainware/paylist-api/config"
 	ep "github.com/ariebrainware/paylist-api/endpoint"
-	"github.com/ariebrainware/paylist-api/configdb"
+	"github.com/ariebrainware/paylist-api/util"
 )
-
 
 type endpoint struct {
 	Method      string
@@ -17,7 +16,7 @@ type endpoint struct {
 }
 
 func main() {
-	configdb.Conf()
+	config.Conf()
 	router := gin.Default()
 	router.Use(cors.Default())
 	listEndpoint := []endpoint{
@@ -37,23 +36,20 @@ func main() {
 	}
 
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  http.StatusOK,
-			"message": "Paylist-API available endpoint",
-			"data":    listEndpoint,
-		})
+		util.CallSuccessOK(c, "Paylist-API available endpoint", listEndpoint)
 	})
 	v1 := router.Group("/v1/paylist/")
-	v1.GET("/paylist", ep.Auth, ep.FetchAllPaylist)
+	v1.GET("/paylist",ep.Auth, ep.FetchAllPaylist)
 	v1.GET("/paylist/:id", ep.Auth, ep.FetchSinglePaylist)
-	v1.POST("/paylist/", ep.Auth,ep.Coba, ep.CreatePaylist)
-	v1.PUT("/paylist/:id", ep.Auth, ep.UpdatePaylist)
-	v1.DELETE("/paylist/:id", ep.Auth,ep.Coba2, ep.DeletePaylist)
+	v1.POST("/paylist/", ep.Auth,ep.CreateUserPaylist, ep.CreatePaylist)
+	v1.PUT("/paylist/:id", ep.Auth, ep.Completed, ep.UpdatePaylist)
+	v1.DELETE("/paylist/:id", ep.Auth,ep.DeleteUserPaylist, ep.DeletePaylist)
 	v1.GET("/users/:id", ep.Auth, ep.FetchSingleUser)
 	v1.GET("/users", ep.Auth, ep.FetchAllUser)
 	v1.POST("/users/signin", ep.Login)
 	v1.POST("/users/signup", ep.CreateUser)
 	v1.PUT("/users/:id", ep.Auth, ep.UpdateUser)
 	v1.DELETE("/users/:id", ep.Auth, ep.DeleteUser)
+	//v1.GET("/users/logout", ep.Auth, ep.Logout)
 	router.Run(":3002")
 }

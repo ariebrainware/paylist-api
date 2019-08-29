@@ -2,28 +2,28 @@ package endpoint
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"log"
 	"github.com/gin-gonic/gin"
-	"github.com/ariebrainware/paylist-api/configdb"
-	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/ariebrainware/paylist-api/config"
+	"github.com/ariebrainware/paylist-api/model"
+	"github.com/ariebrainware/paylist-api/util"
 )
+
 type User struct {
 	Username string
 	jwt.StandardClaims
 }
 
-var conf configdb.Config
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
-	//var users model.User
-	//username := c.Param("username")
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
+	completed, _ := strconv.Atoi(c.PostForm("completed"))
 	paylist := model.Paylist{
 		Name:   c.PostForm("name"),
 		Amount: amount,
+		Completed: completed,
 	}
 	fmt.Println(c.PostForm("name"))
 	fmt.Println(amount)
@@ -35,46 +35,50 @@ func CreatePaylist(c *gin.Context) {
 	log.Println(token.Valid, tk, err)
 
 	paylist.Username = string(tk.Username)
-	configdb.DB.Save(&paylist)
-	c.JSON(http.StatusCreated, gin.H{
-		"status":     http.StatusCreated,
-		"message":    "Paylist item created successfully!",
-		"resourceId": paylist.ID,
-	})
+	errf := config.DB.Save(&paylist).Error
+	if errf != nil {
+		util.CallServerError(c, "fail to create paylist", errf)	
+		return
+	}
+	util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
 }
 
 //FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
-	//var user model.User
+	
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
 		return []byte("secret"), nil
 	})
-	username := tk.Username
 	log.Println(token.Valid, tk, err)
-	configdb.DB.Model(&paylist).Where("username = ?", username).Find(&paylist)
-
+	username := tk.Username
+	config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist)
 	if len(paylist) <= 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
+		util.CallErrorNotFound(c, "no paylist found!", nil)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
+	util.CallSuccessOK(c, "fetched all paylist", paylist)
 }
 
 //FetchSinglePaylist fetch a single paylist
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
-	err := configdb.DB.Model(&model.Paylist{}).Where("ID = ?", paylistID).Find(&paylist).Error
-
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No paylist found!"})
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+		return []byte("secret"), nil
+	})
+	log.Println(token.Valid, tk, err)
+	username := tk.Username
+	errf := config.DB.Model(&model.Paylist{}).Where("ID = ? and username = ?",paylistID, username).Find(&paylist).Error
+	if errf != nil {
+		util.CallErrorNotFound(c, "no paylist found!", errf)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": paylist})
+	util.CallSuccessOK(c, "success fetch single paylist", paylist)
 }
 
 // UpdatePaylist update a paylist
@@ -93,25 +97,20 @@ func UpdatePaylist(c *gin.Context) {
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
+	config.DB.First(&paylist, id)
 
-	configdb.DB.First(&paylist, id)
 	if paylist.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
-			"message": "No paylist ID found!"})
-			return
-		}
-	username := tk.Username
-	configdb.DB.Model(&paylist).Where("username = ?", username).Update(&updatedPaylist)
-	if tk.Username != paylist.Username {
-		c.JSON(http.StatusNotFound, gin.H{"message": "not authorized"})
+		util.CallErrorNotFound(c, "no paylist found", nil)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
-		"message": "Paylist updated successfully!"})
+	username := tk.Username
+	config.DB.Model(&paylist).Where("username = ?", username).Update(&updatedPaylist)
+	if tk.Username != paylist.Username {
+		util.CallServerError(c, "not authorized", nil)
+		return
+	}
+	util.CallSuccessOK(c, "paylist successfully updated!", paylist)
 }
-
 // DeletePaylist remove a paylist
 func DeletePaylist(c *gin.Context) {
 	var paylist model.Paylist
@@ -123,26 +122,25 @@ func DeletePaylist(c *gin.Context) {
 	log.Println(token.Valid, tk, err)
 
 	PaylistID := c.Param("id")
-	configdb.DB.Where("ID = ?", PaylistID).Find(&paylist)
+	config.DB.Where("ID = ?", PaylistID).Find(&paylist)
 	if paylist.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No paylist found!"})
+		util.CallErrorNotFound(c, "no paylist found!", nil)
 		return
 	}
 	username := tk.Username
-	configdb.DB.Model(&paylist).Where("username = ?", username).Delete(&paylist)
+	config.DB.Model(&paylist).Where("username = ?", username).Delete(&paylist)
 	if tk.Username != paylist.Username {
-		c.JSON(http.StatusNotFound, gin.H{"message": "not authorized"})
+		util.CallServerError(c, "not authorized", nil)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Paylist deleted successfully!"})
+	util.CallSuccessOK(c, "paylist successfully deleted!", nil)
 }
-
-func Coba(c *gin.Context) {
-	var paylist model.Paylist
+//CreateUserPaylist handle add user paylist
+func CreateUserPaylist(c *gin.Context) {
+	//var paylist model.Paylist
 	var users model.User
 	var sisa int
-	id := c.Param("id")
-
+	
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
@@ -152,21 +150,18 @@ func Coba(c *gin.Context) {
 	
 	username := tk.Username
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
-	eror:= configdb.DB.Table("users").Select("balance").Where("username  = ?", username).First(&users).Error
+	eror:= config.DB.Table("users").Select("balance").Where("username  = ?", username).First(&users).Error
 	if eror != nil{
-		fmt.Println(eror)
-	}
-	if users.Balance >= amount {
-		sisa = users.Balance - amount
-		 paylist.Completed = 1
-		configdb.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
-	}
+		util.CallErrorNotFound(c, "can't select balance", eror)
+		return
+	} 
+	sisa = users.Balance - amount
 	users.Balance = sisa
-	configdb.DB.Model(&users).Where("username = ?", username).Update(&users)
+	config.DB.Model(&users).Where("username = ?", username).Update(&users)
 	fmt.Println("sisa", sisa)
 }
-//func 
-func Coba2(c *gin.Context){
+//DeleteUserPaylist handle deleted user paylist
+func DeleteUserPaylist(c *gin.Context){
 	var paylist model.Paylist
 	var user model.User
 	var balance int
@@ -178,12 +173,45 @@ func Coba2(c *gin.Context){
 	}) 
 	log.Println(token.Valid, tk, err)
 	username := tk.Username
-	configdb.DB.Table("paylists").Select("amount").Where("ID = ? and username = ?",id, username).Find(&paylist)
-	configdb.DB.Table("users").Select("balance").Where("username = ?", username).Find(&user)
+	errf := config.DB.Table("paylists").Select("amount, completed").Where("ID = ? and username = ?",id, username).Find(&paylist).Error
+	if errf != nil {
+		util.CallErrorNotFound(c, "can't select amount", errf)
+		return
+	}
 	fmt.Println(paylist.Amount)
+	erf := config.DB.Table("users").Select("balance").Where("username = ?", username).Find(&user).Error
+	if erf != nil {
+		util.CallErrorNotFound(c, "can't select balance", erf)
+		return
+	}
 	fmt.Println(user.Balance)
-	balance = paylist.Amount + user.Balance
-	user.Balance = balance 
-	fmt.Println(user.Balance)
-	configdb.DB.Model(&user).Where("username = ?", username).Update(&user)	
+	if paylist.Completed == 0 {
+		balance = paylist.Amount + user.Balance	
+		user.Balance = balance 
+		fmt.Println(user.Balance)
+		config.DB.Model(&user).Where("username = ?", username).Update(&user)
+	}
+}
+//Completed
+func Completed(c *gin.Context){
+	var paylist model.Paylist
+	var user model.User
+	id := c.Param("id")
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+		return []byte("secret"), nil
+	}) 
+	log.Println(token.Valid, tk, err)
+	username := tk.Username
+	config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Find(&paylist)
+	config.DB.Model(&user).Select("balance").Where("username = ?", username).Find(&user)
+	
+	if user.Balance > 0 && paylist.Completed == 0 {
+		paylist.Completed = 1
+		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
+	} else if user.Balance < 0 && paylist.Completed == 0 {
+		paylist.Completed = 0
+		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
+	}
 }

@@ -5,6 +5,7 @@ import (
 	//"github.com/ariebrainware/paylist-api/model"
 )
 
+// Paylist is a model for paylist table
 type Paylist struct {
 	gorm.Model
 	// ID     int    `json:"id"`
@@ -12,4 +13,5 @@ type Paylist struct {
 	Amount int    `json:"amount"`
 	Username string
 	Completed int `json:"completed"`
+	User []User `gorm:"foreignkey:username"`
 }

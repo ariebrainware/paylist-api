@@ -1,19 +1,19 @@
 package endpoint
 
 import (
-	//"github.com/jinzhu/gorm"
 	"fmt"
 	"net/http"
 	"time"
 	"strconv"
-	//u "io/ioutils"
 
+	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/ariebrainware/paylist-api/configdb"
 	
+
+	"github.com/ariebrainware/paylist-api/util"
 )
 
 // Token is a struct for token model
@@ -35,63 +35,54 @@ type user1 struct {
 
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
-	balance, _ := strconv.Atoi(c.PostForm("balance"))
+	//balance, _ := strconv.Atoi(c.PostForm("balance"))
 	users := model.User{
 		Email:    c.PostForm("email"),
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
-		Balance: balance,
+		//Balance: balance,
 	}
 	// fmt.Println(c.PostForm("email"))
 	// fmt.Println(c.PostForm("name"))
 	// fmt.Println(c.PostForm("username"))
 	// fmt.Println(c.PostForm("password"))
-
+	//check username exist or not
+	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == ""  {
+		util.CallServerError(c, "field can't be null", nil)
+		return
+	}
+	var exists model.User
+	if err := config.DB.Where("username = ?", users.Username).First(&exists).Error; err == nil {
+		util.CallServerError(c, "username already exist", err)
+		return
+	}
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"message": "password encryption failed",
-		})
-		c.JSON(http.StatusCreated, gin.H{
-			"message": "password encryption success!",
-		})
-	}
-	var exists model.User
-	if err := configdb.DB.Where("username = ?", users.Username).First(&exists).Error; err == nil {
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"message": "username already exist",
-		})
+		util.CallServerError(c, "password encryption failed", err)
 		return
 	}
+	//util.CallSuccessOK(c, "password encryption success!", password)
 	users.Password = string(password)
-	eror := configdb.DB.Save(&users).Error
-	if eror != nil {
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"message": "failed to sign up",
-		})
+	err = config.DB.Save(&users).Error
+	if err != nil {
+		util.CallServerError(c, "Failed Create User!", err)
 	}
-	c.JSON(http.StatusCreated, gin.H{
-		"status":      http.StatusCreated,
-		"message":     "User created Successfully!",
-		"resourcedId": users.ID,
-		})
+	util.CallSuccessOK(c, "User created Successfully!", users.ID)
 }
 
 // FetchAllUser function to get list of users
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	configdb.DB.Find(&users)
+	config.DB.Find(&users)
 
 	if len(users) <= 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
+		util.CallErrorNotFound(c, "No User Found!", nil)
 		return
 	}
 	for _, item := range users {
-
 		user = append(user, user1{
 			ID:        item.ID,
 			CreatedAt: item.CreatedAt,
@@ -103,7 +94,7 @@ func FetchAllUser(c *gin.Context) {
 			Balance: item.Balance,
 		})
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
+	util.CallSuccessOK(c, "Fetch All User Data ", user)
 }
 
 // UpdateUser function to update user information
@@ -112,25 +103,24 @@ func UpdateUser(c *gin.Context) {
 	ID := c.Param("id")
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	updatedUser := model.User{
-		Email : c.PostForm("email"),
-		Name:   c.PostForm("name"),
+		Email:    c.PostForm("email"),
+		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 		Balance: balance,
 	}
-	configdb.DB.First(&users, ID)
+	config.DB.First(&users, ID)
 
 	if users.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status": http.StatusNotFound, 
-			"message": "No ID found!"})
-			return
-		}
-	   
-	configdb.DB.Model(&users).Update(&updatedUser)
-	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
-		 "message": "User updated successfully!"})
+		util.CallErrorNotFound(c, "Paylist not found, make sure to specify the ID", nil)
+		return
+	}
+
+	err := config.DB.Model(&users).Update(&updatedUser).Error
+	if err != nil {
+		util.CallServerError(c, "Failed to update user", err)
+	}
+	util.CallSuccessOK(c, "User successfully updated!", ID)
 }
 
 // DeleteUser function to handle user deletion
@@ -138,26 +128,28 @@ func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
 
-	configdb.DB.First(&users, usersID)
+	config.DB.First(&users, usersID)
 
 	if users.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "No user found!"})
+		util.CallErrorNotFound(c, "user not found", nil)
 		return
 	}
-	configdb.DB.Delete(&users)
-	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK, "message": "User Delete succcessfully!"})
+	err := config.DB.Delete(&users).Error
+	if err != nil {
+		util.CallServerError(c, "failed to delete user", err)
+		return
+	}
+	util.CallSuccessOK(c, "user delete succcessfully!", nil)
 }
 
 // FetchSingleUser function to get single user
 func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	err := configdb.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
+	err := config.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No user found!"})
+		util.CallErrorNotFound(c, "no user found", nil)
 		return
 	}
 	user := &user1{
@@ -170,7 +162,7 @@ func FetchSingleUser(c *gin.Context) {
 		Username:  users.Username,
 		Balance : users.Balance,
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
+	util.CallSuccessOK(c, "success fetch single data", user)
 }
 
 // Login function to handle login user
@@ -180,26 +172,19 @@ func Login(c *gin.Context) {
 
 	user := &model.User{}
 	if username == "" || password == "" {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "please provide username and password"})
+		util.CallErrorNotFound(c, "please provide username and password", nil)
 		return
 	}
 
-	err := configdb.DB.Where("username = ?", username).First(&user).Error
+	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "wrong username"})
+		util.CallErrorNotFound(c, "wrong username", err)
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "wrong password or password doesn't match",
-		})
+		util.CallErrorNotFound(c, "wrong password or password doesn't match", errf)
 		return
 	}
 
@@ -210,31 +195,15 @@ func Login(c *gin.Context) {
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, err := token.SignedString([]byte("secret"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		util.CallServerError(c, "error create token", err)
 		c.Abort()
 	}
-	configdb.DB.Save(&user)
-	users := &user1{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		DeletedAt: user.DeletedAt,
-		Email:     user.Email,
-		Name:      user.Name,
-		Username:  user.Username,
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": "logged in",
-		"token":   tokenString,
-		"user":    users,
-	})
+	util.CallSuccessOK(c, "logged in", tokenString)
 }
 
 // Auth function authorization to handle authorized
 func Auth(c *gin.Context) {
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
 			return nil, fmt.Errorf("unexpected SigningMethod :%v", token.Header["alg"])
@@ -254,7 +223,13 @@ func Auth(c *gin.Context) {
 }
 
 // func Logout(c *gin.Context){
-// 	session := sessions.Default()
-// 	user := session.
+	
+// 	c.Delete("Authorization")
 
+// 	err := c.Save()
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate session token"})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
 // }

@@ -1,19 +1,20 @@
 package endpoint
 
 import (
-	"testing"
 	"bytes"
-	"net/http"
-	"net/http/httptest"
 	"fmt"
+	"net/http"
+	"testing"
+	"net/http/httptest"
 	"github.com/gin-gonic/gin"	
 )
+
 // fun TestFetchSingleUser Functional Testing for FetchSingleUser
 func TestFetchSingleUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	req, err := http.NewRequest("GET", "/users/31", nil)
-    if err != nil {
-        fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
 	}
     router := gin.Default()
     router.GET("/users/:id", FetchSingleUser)
@@ -29,8 +30,8 @@ func TestFetchSingleUser(t *testing.T) {
 func TestFetchAllUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	req, err := http.NewRequest("GET", "/users", nil)
-    if err != nil {
-        fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
 	}
     router := gin.Default()
     router.GET("/users", FetchAllUser)
@@ -76,6 +77,7 @@ func TestDeleteUser(t *testing.T) {
 			status, http.StatusOK)
 	}
 }
+
 // fun TestUpdateUser Functional Testing for UpdateUser
 func TestUpdateUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -99,13 +101,13 @@ func TestUpdateUser(t *testing.T) {
 func TestFetchSinglePaylist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	req, err := http.NewRequest("GET", "/paylist/1", nil)
-    if err != nil {
-        fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
 	}
-    router := gin.Default()
-    router.GET("paylist/:id", FetchSinglePaylist)
-    resp := httptest.NewRecorder()
-    router.ServeHTTP(resp, req)
+	router := gin.Default()
+	router.GET("paylist/:id", FetchSinglePaylist)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
@@ -117,13 +119,13 @@ func TestFetchSinglePaylist(t *testing.T) {
 func TestFetchAllPaylist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	req, err := http.NewRequest("GET", "/paylist", nil)
-    if err != nil {
-        fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
 	}
-    router := gin.Default()
-    router.GET("/paylist", FetchAllPaylist)
-    resp := httptest.NewRecorder()
-    router.ServeHTTP(resp, req)
+	router := gin.Default()
+	router.GET("/paylist", FetchAllPaylist)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 	//assert.Equal(t, resp.Code, 200)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
