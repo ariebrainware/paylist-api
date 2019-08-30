@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 	"strconv"
-
+	"log"
 	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
@@ -101,6 +101,13 @@ func FetchAllUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	var users model.User
 	ID := c.Param("id")
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+		return []byte("secret"), nil
+	})
+	log.Println(token.Valid, tk, err)
+	username := tk.Username
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	updatedUser := model.User{
 		Email:    c.PostForm("email"),
@@ -116,9 +123,9 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	err := config.DB.Model(&users).Update(&updatedUser).Error
-	if err != nil {
-		util.CallServerError(c, "Failed to update user", err)
+	errf := config.DB.Model(&users).Where("username = ?", username).Update(&updatedUser).Error
+	if errf != nil {
+		util.CallServerError(c, "Failed to update user", errf)
 	}
 	util.CallSuccessOK(c, "User successfully updated!", ID)
 }
@@ -127,16 +134,22 @@ func UpdateUser(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+		return []byte("secret"), nil
+	})
+	log.Println(token.Valid, tk, err)
+	username := tk.Username
 
 	config.DB.First(&users, usersID)
-
 	if users.ID == 0 {
 		util.CallErrorNotFound(c, "user not found", nil)
 		return
 	}
-	err := config.DB.Delete(&users).Error
-	if err != nil {
-		util.CallServerError(c, "failed to delete user", err)
+	config.DB.Model(&users).Where("username = ?", username).Delete(&users)
+	if tk.Username != users.Username {
+		util.CallServerError(c, "not authorized", nil)
 		return
 	}
 	util.CallSuccessOK(c, "user delete succcessfully!", nil)
@@ -146,10 +159,16 @@ func DeleteUser(c *gin.Context) {
 func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	err := config.DB.Model(&model.User{}).Where("ID = ?", usersID).Find(&users).Error
-
-	if err != nil {
-		util.CallErrorNotFound(c, "no user found", nil)
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+		return []byte("secret"), nil
+	})
+	log.Println(token.Valid, tk, err)
+	username := tk.Username
+	errf := config.DB.Model(&model.User{}).Where("ID = ? and username = ?", usersID, username).Find(&users).Error
+	if errf != nil {
+		util.CallErrorNotFound(c, "no user found", errf)
 		return
 	}
 	user := &user1{
@@ -188,8 +207,12 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	expirationTime := time.Now().Add(12 * time.Hour)
 	tk := &Token{
 		Username: user.Username,
+		StandardClaims : jwt.StandardClaims{
+			ExpiresAt : expirationTime.Unix(),
+		},
 	}
 	//Create JWT token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
@@ -198,6 +221,11 @@ func Login(c *gin.Context) {
 		util.CallServerError(c, "error create token", err)
 		c.Abort()
 	}
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
 	util.CallSuccessOK(c, "logged in", tokenString)
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/ariebrainware/paylist-api/model"
 	"github.com/ariebrainware/paylist-api/util"
 )
-
+//User stuct for parse token
 type User struct {
 	Username string
 	jwt.StandardClaims
@@ -37,7 +37,8 @@ func CreatePaylist(c *gin.Context) {
 	paylist.Username = string(tk.Username)
 	errf := config.DB.Save(&paylist).Error
 	if errf != nil {
-		util.CallServerError(c, "fail to create paylist", errf)	
+		util.CallServerError(c, "fail to create paylist", errf)
+		c.Abort()	
 		return
 	}
 	util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
@@ -54,9 +55,9 @@ func FetchAllPaylist(c *gin.Context) {
 	})
 	log.Println(token.Valid, tk, err)
 	username := tk.Username
-	config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist)
-	if len(paylist) <= 0 {
-		util.CallErrorNotFound(c, "no paylist found!", nil)
+	errf := config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist).Error
+	if errf != nil  {
+		util.CallErrorNotFound(c, "no paylist found!", errf)
 		return
 	}
 	util.CallSuccessOK(c, "fetched all paylist", paylist)
@@ -125,15 +126,16 @@ func DeletePaylist(c *gin.Context) {
 	config.DB.Where("ID = ?", PaylistID).Find(&paylist)
 	if paylist.ID == 0 {
 		util.CallErrorNotFound(c, "no paylist found!", nil)
+		c.Abort()
 		return
 	}
 	username := tk.Username
-	config.DB.Model(&paylist).Where("username = ?", username).Delete(&paylist)
+	config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist)
 	if tk.Username != paylist.Username {
-		util.CallServerError(c, "not authorized", nil)
+		util.CallServerError(c, "user not authorized", nil)
+		c.Abort()
 		return
 	}
-	util.CallSuccessOK(c, "paylist successfully deleted!", nil)
 }
 //CreateUserPaylist handle add user paylist
 func CreateUserPaylist(c *gin.Context) {
@@ -160,6 +162,7 @@ func CreateUserPaylist(c *gin.Context) {
 	config.DB.Model(&users).Where("username = ?", username).Update(&users)
 	fmt.Println("sisa", sisa)
 }
+
 //DeleteUserPaylist handle deleted user paylist
 func DeleteUserPaylist(c *gin.Context){
 	var paylist model.Paylist
@@ -170,7 +173,7 @@ func DeleteUserPaylist(c *gin.Context){
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
 		return []byte("secret"), nil
-	}) 
+	})
 	log.Println(token.Valid, tk, err)
 	username := tk.Username
 	errf := config.DB.Table("paylists").Select("amount, completed").Where("ID = ? and username = ?",id, username).Find(&paylist).Error
@@ -191,9 +194,13 @@ func DeleteUserPaylist(c *gin.Context){
 		fmt.Println(user.Balance)
 		config.DB.Model(&user).Where("username = ?", username).Update(&user)
 	}
+	eror := config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Delete(&paylist).Error
+	if eror == nil {
+		util.CallSuccessOK(c, "paylist successfully deleted!", nil)
+	}
 }
-//Completed
-func Completed(c *gin.Context){
+//UpdateUserPaylist handle status completed in paylists
+func UpdateUserPaylist(c *gin.Context){
 	var paylist model.Paylist
 	var user model.User
 	id := c.Param("id")
@@ -204,14 +211,23 @@ func Completed(c *gin.Context){
 	}) 
 	log.Println(token.Valid, tk, err)
 	username := tk.Username
-	config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Find(&paylist)
-	config.DB.Model(&user).Select("balance").Where("username = ?", username).Find(&user)
+	errf := config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Find(&paylist).Error
+	if errf != nil {
+		util.CallErrorNotFound(c,"paylist id not found", errf)
+		return
+	}
+	eror := config.DB.Model(&user).Select("balance").Where("username = ?", username).Find(&user).Error
+	if eror != nil {
+		util.CallErrorNotFound(c,"user not found", eror)
+		return
+	}
 	
-	if user.Balance > 0 && paylist.Completed == 0 {
+	if user.Balance >= 0 && paylist.Completed == 0 {
 		paylist.Completed = 1
 		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
 	} else if user.Balance < 0 && paylist.Completed == 0 {
 		paylist.Completed = 0
 		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
 	}
+	util.CallSuccessOK(c,"successfully update user paylist",paylist.Completed)
 }
