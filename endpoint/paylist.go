@@ -19,7 +19,7 @@ type User struct {
 // CreatePaylist function to create new paylist
 func CreatePaylist(c *gin.Context) {
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
-	completed, _ := strconv.Atoi(c.PostForm("completed"))
+	completed, _ := strconv.ParseBool("completed")
 	paylist := model.Paylist{
 		Name:   c.PostForm("name"),
 		Amount: amount,
@@ -188,7 +188,7 @@ func DeleteUserPaylist(c *gin.Context){
 		return
 	}
 	fmt.Println(user.Balance)
-	if paylist.Completed == 0 {
+	if paylist.Completed == false {
 		balance = paylist.Amount + user.Balance	
 		user.Balance = balance 
 		fmt.Println(user.Balance)
@@ -222,11 +222,11 @@ func UpdateUserPaylist(c *gin.Context){
 		return
 	}
 	
-	if user.Balance >= 0 && paylist.Completed == 0 {
-		paylist.Completed = 1
+	if user.Balance >= 0 && paylist.Completed == false {
+		paylist.Completed = true
 		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
-	} else if user.Balance < 0 && paylist.Completed == 0 {
-		paylist.Completed = 0
+	} else if user.Balance < 0 && paylist.Completed == false {
+		paylist.Completed = false
 		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
 	}
 	util.CallSuccessOK(c,"successfully update user paylist",paylist.Completed)

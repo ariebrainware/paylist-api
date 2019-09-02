@@ -33,6 +33,7 @@ func main() {
 		{Method: "POST", URL: "/users/signin", Description: "Sign In"},
 		{Method: "PUT", URL: "/users/:id", Description: "Edit/Update User Data by ID"},
 		{Method: "DELETE", URL: "/users/:id", Description: "Delete User Data by ID"},
+		{Method: "PUT", URL:"/user-paylist/:id", Description: "Update User-Paylist by ID"},
 	}
 
 	router.GET("/", func(c *gin.Context) {
