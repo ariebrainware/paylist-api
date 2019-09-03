@@ -206,7 +206,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(2 * time.Minute)
+	expirationTime := time.Now().Add(12 * time.Hour)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims : jwt.StandardClaims{
