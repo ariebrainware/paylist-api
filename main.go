@@ -52,6 +52,7 @@ func main() {
 	v1.PUT("/users/:id", ep.Auth, ep.UpdateUser)
 	v1.DELETE("/users/:id", ep.Auth, ep.DeleteUser)
 	v1.PUT("/user-paylist/:id",ep.Auth, ep.UpdateUserPaylist)
-	//v1.GET("/users/logout", ep.Auth, ep.Logout)
+	v1.GET("/user/signout", ep.Auth, ep.Logout)
+	v1.POST("/users/refresh-token", ep.RefreshToken)
 	router.Run(":3002")
 }

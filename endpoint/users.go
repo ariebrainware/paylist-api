@@ -11,8 +11,6 @@ import (
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	
-
 	"github.com/ariebrainware/paylist-api/util"
 )
 
@@ -186,6 +184,7 @@ func FetchSingleUser(c *gin.Context) {
 
 // Login function to handle login user
 func Login(c *gin.Context) {
+	logging := &model.Logging{}
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 
@@ -207,7 +206,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(12 * time.Hour)
+	expirationTime := time.Now().Add(2 * time.Minute)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims : jwt.StandardClaims{
@@ -221,6 +220,11 @@ func Login(c *gin.Context) {
 		util.CallServerError(c, "error create token", err)
 		c.Abort()
 	}
+	logging.Token = tokenString
+	logging.Username = username
+	logging.User_status = true
+	config.DB.Save(&logging)
+	
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:    "token",
 		Value:   tokenString,
@@ -250,14 +254,43 @@ func Auth(c *gin.Context) {
 	}
 }
 
-// func Logout(c *gin.Context){
-	
-// 	c.Delete("Authorization")
+//RefreshToken hanlde refreshing expired token
+func RefreshToken(c *gin.Context) {
+	claim := Token{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error){
+		return []byte("secret"), nil
+	})
+	log.Println(token.Valid, claim, err)
+	if time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		c.Writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	expirationTime := time.Now().Add(12 * time.Hour)
+	claim.ExpiresAt = expirationTime.Unix()
+	tokenn:= jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
+	tknString, err := tokenn.SignedString([]byte("secret"))
+	if err != nil {
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:    "token",
+		Value:   tknString,
+		Expires: expirationTime,
+	})
+	util.CallSuccessOK(c, "refresh token success", tknString)
+}
 
-// 	err := c.Save()
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate session token"})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
-// }
+//Logout handle logout user
+func Logout(c *gin.Context){
+	var logging model.Logging
+	tokenStr := c.GetHeader("Authorization")
+	token := config.DB.Model(&logging).Where("token = ?",tokenStr ).Find(&logging).Error
+	if token != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to generate session token"})
+		return
+	}
+	config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging)
+	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
+}
