@@ -306,7 +306,7 @@ func Logout(c *gin.Context){
 		return
 	}
 	fmt.Println(logging.UserStatus)
-	erf := config.DB.Model(&logging).Where("token = ?", tokenStr).Update("user_status", false).Error
+	erf := config.DB.Model(&logging).Where("token = ?", tokenStr).Update("userStatus", false).Error
 	if erf != nil {
 		fmt.Println(erf)
 	}
