@@ -11,5 +11,4 @@ type User struct {
 	Username string `gorm:"primary_key;not null"`
 	Password string `json:"password"`
 	Balance int `json:"balance"`
-	
 }

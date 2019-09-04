@@ -155,6 +155,7 @@ func DeleteUser(c *gin.Context) {
 
 // FetchSingleUser function to get single user
 func FetchSingleUser(c *gin.Context) {
+	//logging := &model.Logging{}
 	var users model.User
 	usersID := c.Param("id")
 	tk := User{}
@@ -164,6 +165,7 @@ func FetchSingleUser(c *gin.Context) {
 	})
 	log.Println(token.Valid, tk, err)
 	username := tk.Username
+
 	errf := config.DB.Model(&model.User{}).Where("ID = ? and username = ?", usersID, username).Find(&users).Error
 	if errf != nil {
 		util.CallErrorNotFound(c, "no user found", errf)
@@ -220,9 +222,15 @@ func Login(c *gin.Context) {
 		util.CallServerError(c, "error create token", err)
 		c.Abort()
 	}
+	config.DB.Model(&logging).Find(&logging)
+	if logging.Username == username {
+		util.CallServerError(c, "already login", nil)
+		c.Abort()
+		return
+	}
 	logging.Token = tokenString
 	logging.Username = username
-	logging.User_status = true
+	logging.UserStatus = true
 	config.DB.Save(&logging)
 	
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -235,6 +243,7 @@ func Login(c *gin.Context) {
 
 // Auth function authorization to handle authorized
 func Auth(c *gin.Context) {
+	logging := &model.Logging{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
@@ -242,7 +251,12 @@ func Auth(c *gin.Context) {
 		}
 		return []byte("secret"), nil
 	})
-
+	config.DB.Model(&logging).Where("token = ? ", tokenString).Find(&logging)
+	if logging.Token == "" {
+		util.CallServerError(c,"you have to sign in first", nil)
+		c.Abort()
+		return
+	}
 	if token != nil && err == nil {
 		fmt.Println("token verified")
 	} else {
@@ -284,13 +298,19 @@ func RefreshToken(c *gin.Context) {
 
 //Logout handle logout user
 func Logout(c *gin.Context){
-	var logging model.Logging
+	logging := &model.Logging{}
 	tokenStr := c.GetHeader("Authorization")
-	token := config.DB.Model(&logging).Where("token = ?",tokenStr ).Find(&logging).Error
+	token := config.DB.Model(&logging).Where("token = ?", tokenStr).Find(&logging).Error
 	if token != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to generate session token"})
 		return
 	}
+	fmt.Println(logging.UserStatus)
+	erf := config.DB.Model(&logging).Where("token = ?", tokenStr).Update("user_status", false).Error
+	if erf != nil {
+		fmt.Println(erf)
+	}
+	fmt.Println(logging.UserStatus)
 	config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging)
-	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
+	util.CallSuccessOK(c, "logged out", logging.UserStatus)
 }

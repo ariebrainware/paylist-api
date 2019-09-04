@@ -47,7 +47,6 @@ func CreatePaylist(c *gin.Context) {
 //FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
-	
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
@@ -91,7 +90,7 @@ func UpdatePaylist(c *gin.Context) {
 		return []byte("secret"), nil
 	})
 	log.Println(token.Valid, tk, err)
-
+	username := tk.Username
 	id, _ := strconv.Atoi(c.Param("id"))
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	updatedPaylist := model.Paylist{
@@ -104,7 +103,6 @@ func UpdatePaylist(c *gin.Context) {
 		util.CallErrorNotFound(c, "no paylist found", nil)
 		return
 	}
-	username := tk.Username
 	config.DB.Model(&paylist).Where("username = ?", username).Update(&updatedPaylist)
 	if tk.Username != paylist.Username {
 		util.CallServerError(c, "not authorized", nil)
@@ -121,7 +119,7 @@ func DeletePaylist(c *gin.Context) {
 		return []byte("secret"), nil
 	})
 	log.Println(token.Valid, tk, err)
-
+	username := tk.Username
 	PaylistID := c.Param("id")
 	config.DB.Where("ID = ?", PaylistID).Find(&paylist)
 	if paylist.ID == 0 {
@@ -129,7 +127,6 @@ func DeletePaylist(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	username := tk.Username
 	config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist)
 	if tk.Username != paylist.Username {
 		util.CallServerError(c, "user not authorized", nil)
@@ -142,14 +139,12 @@ func CreateUserPaylist(c *gin.Context) {
 	//var paylist model.Paylist
 	var users model.User
 	var sisa int
-	
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
 		return []byte("secret"), nil
 	}) 
 	log.Println(token.Valid, tk, err)
-	
 	username := tk.Username
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	eror:= config.DB.Table("users").Select("balance").Where("username  = ?", username).First(&users).Error
@@ -227,7 +222,7 @@ func UpdateUserPaylist(c *gin.Context){
 		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
 	} else if user.Balance < 0 && paylist.Completed == false {
 		paylist.Completed = false
-		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
+		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
 	}
 	util.CallSuccessOK(c,"successfully update user paylist",paylist.Completed)
 }
