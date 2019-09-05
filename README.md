@@ -6,8 +6,9 @@ Pay your bill easily!
 
 1. Install golang and setup `$GOPATH`. Download in [here](#https://golang.org/dl/) and Installation instruction can be found in [here](#https://golang.org/doc/install)
 2. `go get -u github.com/ariebrainware/paylist-api`
-3. Setup `connString`  variable inside `main.go`
+3. Setup `connString`  variable inside `config.go`
 4. `go run main.go`
+5. Install go get -u github.com/pressly/goose/cmd/goose for goose migration or you can find Installation instruction in [here](#https://github.com/pressly/goose)
 
 ## API Design
 
@@ -29,10 +30,12 @@ Pay your bill easily!
 | /users/refresh-token  | POST   | Sign in for user                                      |
 
 
-
 ## Database Design
 
-Database design will automatically create by using `db.AutoMigrate`. So you just need to config database connection string inside `main.go`, then run `main.go`
+Use GORM
+
+Database design will automatically create by using `db.AutoMigrate`. So you just need to config database connection string inside `config.go`, then run `main.go`
+
 
 ```
 Paylists Table
@@ -66,6 +69,7 @@ Users Table
 | balance    | int(11)          | YES  |     | NULL    |                |
 +------------+------------------+------+-----+---------+----------------+
 ```
+
 ```
 Loggings Table
 +------------+------------------+------+-----+---------+----------------+
