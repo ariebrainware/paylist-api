@@ -4,11 +4,11 @@ Pay your bill easily!
 
 ## Setup 
 
-1. Install golang and setup `$GOPATH`. Download in [here](#https://golang.org/dl/) and Installation instruction can be found in [here](#https://golang.org/doc/install)
+1. Install golang and setup `$GOPATH`. Download in [here](https://golang.org/dl/) and Installation instruction can be found in [here](https://golang.org/doc/install)
 2. `go get -u github.com/ariebrainware/paylist-api`
 3. Setup `connString`  variable inside `config.go`
 4. `go run main.go`
-5. Install go get -u github.com/pressly/goose/cmd/goose for goose migration or you can find Installation instruction in [here](#https://github.com/pressly/goose)
+5. Install go get -u github.com/pressly/goose/cmd/goose for goose migration or you can find Installation instruction in [here](https://github.com/pressly/goose)
 
 ## API Design
 
