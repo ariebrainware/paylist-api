@@ -14,10 +14,10 @@ Pay your bill easily!
 
 | Endpoint              | Method | Description                                           |
 | ---------------       | ------ | ----------------------------------------------------- |
-| /paylist              | GET    | Show all paylist                                      |
-| /paylist              | POST   | Add new paylist                                       |
+| /paylist              | GET    | Show all user-paylist data                            |
+| /paylist              | POST   | Add new user-paylist data                             |
 | /paylist/:id          | PUT    | Update paylist based on `id` in parameter request     |
-| /paylist/:id          | DELETE | Delete paylist based on input `id` parameter          |
+| /paylist/:id          | DELETE | Delete user-paylist based on input `id` parameter     |
 | /paylist/:id          | GET    | Show single paylist based on id in parameter request  |
 | /users                | GET    | Show all user                                         |
 | /users/:id            | GET    | Show single user bases on `id` in parameter request   |
@@ -27,7 +27,7 @@ Pay your bill easily!
 | /users/signin         | POST   | Sign in for user                                      |
 | /user/signout         | GET    | Sign out user or logout                               |
 | /user-paylist/:id     | PUT    | Update user-paylist status(complete or not)           |
-| /users/refresh-token  | POST   | Sign in for user                                      |
+| /users/refresh-token  | POST   | Refresh Expired Token                                 |
 
 
 ## Database Design
