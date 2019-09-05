@@ -302,7 +302,7 @@ func Logout(c *gin.Context){
 	tokenStr := c.GetHeader("Authorization")
 	token := config.DB.Model(&logging).Where("token = ?", tokenStr).Find(&logging).Error
 	if token != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to generate session token"})
+		util.CallServerError(c, "failed to generate session token", token)
 		return
 	}
 	fmt.Println(logging.UserStatus)
