@@ -23,9 +23,9 @@ func main() {
 		//Paylist Endpoint
 		{Method: "GET", URL: "/paylist", Description: "Get/Fetch All Paylist Data"},
 		{Method: "GET", URL: "/paylist/:id", Description: "Get/Fetch Single Paylist Data by ID"},
-		{Method: "POST", URL: "/paylist", Description: "Create Paylist Data"},
+		{Method: "POST", URL: "/paylist", Description: "Create/Insert User-Paylist Data"},
 		{Method: "PUT", URL: "/paylist/:id", Description: "Edit/Update Paylist Data by ID"},
-		{Method: "DELETE", URL: "/paylist/:id", Description: "Delete Paylist Data by ID"},
+		{Method: "DELETE", URL: "/paylist/:id", Description: "Delete User-Paylist Data by ID"},
 		//User Endpoint
 		{Method: "GET", URL: "/users", Description: "Get/Fetch All User Data"},
 		{Method: "GET", URL: "/users/:id", Description: "Get/Fetch Single User Data by ID"},
