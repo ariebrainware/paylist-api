@@ -98,96 +98,58 @@ func CreateUserPaylist(c *gin.Context) {
 	util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
 }
 
-//FetchAllPaylist Fetch All Paylist
-func FetchAllPaylist(c *gin.Context) {
-	var paylist []model.Paylist
+//UpdateUserPaylist handle status completed in paylists
+func UpdateUserPaylist(c *gin.Context) {
+	paylist := model.Paylist{}
+	user := model.User{}
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
-	})
-	log.Println(token.Valid, tk, err)
-	username := tk.Username
-	errf := config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist).Error
-	if errf != nil {
-		util.CallErrorNotFound(c, "no paylist found!", errf)
-		return
-	}
-	util.CallSuccessOK(c, "fetched all paylist", paylist)
-}
 
-//FetchSinglePaylist fetch a single paylist
-func FetchSinglePaylist(c *gin.Context) {
-	var paylist model.Paylist
-	paylistID := c.Param("id")
-	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+	// Parse the token payload
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
-	username := tk.Username
-	errf := config.DB.Model(&model.Paylist{}).Where("ID = ? and username = ?", paylistID, username).Find(&paylist).Error
-	if errf != nil {
-		util.CallErrorNotFound(c, "no paylist found!", errf)
-		return
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
 	}
-	util.CallSuccessOK(c, "success fetch single paylist", paylist)
-}
 
-// UpdatePaylist update a paylist
-func UpdatePaylist(c *gin.Context) {
-	var paylist model.Paylist
-	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
-	})
-	log.Println(token.Valid, tk, err)
+	// Check User balance
 	username := tk.Username
 	id, _ := strconv.Atoi(c.Param("id"))
+	if err = config.DB.Model(&user).Select("balance").Where("username = ?", username).Find(&user).Error; err != nil {
+		util.CallErrorNotFound(c, "user not found", err)
+		return
+	}
+	if err = config.DB.Model(&paylist).Where("ID = ? AND username = ?", id, username).First(&paylist).Error; err != nil || err == gorm.ErrRecordNotFound {
+		util.CallErrorNotFound(c, "no paylist found", nil)
+		return
+	}
+	firstAmount := paylist.Amount
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	updatedPaylist := model.Paylist{
 		Name:   c.PostForm("name"),
 		Amount: amount,
 	}
-	config.DB.First(&paylist, id)
-
-	if paylist.ID == 0 {
-		util.CallErrorNotFound(c, "no paylist found", nil)
-		return
-	}
-	config.DB.Model(&paylist).Where("username = ?", username).Update(&updatedPaylist)
 	if tk.Username != paylist.Username {
 		util.CallServerError(c, "not authorized", nil)
 		return
 	}
-	util.CallSuccessOK(c, "paylist successfully updated!", paylist)
-}
+	// Update paylist
+	if err = config.DB.Model(&paylist).Where("username = ?", username).Update(&updatedPaylist).Error; err != nil {
+		fmt.Println(err)
+		util.CallServerError(c, "something error when try to update paylist", err)
+		return
+	}
 
-// DeletePaylist remove a paylist
-func DeletePaylist(c *gin.Context) {
-	var paylist model.Paylist
-	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
-	})
-	log.Println(token.Valid, tk, err)
-	username := tk.Username
-	PaylistID := c.Param("id")
-	config.DB.Where("ID = ?", PaylistID).Find(&paylist)
-	if paylist.ID == 0 {
-		util.CallErrorNotFound(c, "no paylist found!", nil)
-		c.Abort()
+	// Update user balance
+	err = config.DB.Model(&user).Where("username = ?", username).Update("balance", (firstAmount-amount)+user.Balance).Error
+	if err != nil {
+		fmt.Println(err)
+		util.CallServerError(c, "something error when try to update user balance", err)
 		return
 	}
-	config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist)
-	if tk.Username != paylist.Username {
-		util.CallServerError(c, "user not authorized", nil)
-		c.Abort()
-		return
-	}
+	util.CallSuccessOK(c, "paylist successfully updated!", paylist)
 }
 
 //CreateUserPaylist handle add user paylist
