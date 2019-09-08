@@ -2,15 +2,17 @@ package endpoint
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-	"strconv"
 	"log"
-	"github.com/ariebrainware/paylist-api/config"
-	"github.com/ariebrainware/paylist-api/model"
+	"net/http"
+	"strconv"
+	"time"
+
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/ariebrainware/paylist-api/config"
+	"github.com/ariebrainware/paylist-api/model"
 	"github.com/ariebrainware/paylist-api/util"
 )
 
@@ -28,7 +30,7 @@ type user1 struct {
 	Email     string     `json:"email"`
 	Name      string     `json:"name"`
 	Username  string     `json:"username"`
-	Balance int `json:"balance"`
+	Balance   int        `json:"balance"`
 }
 
 // CreateUser function to sign up
@@ -46,7 +48,7 @@ func CreateUser(c *gin.Context) {
 	// fmt.Println(c.PostForm("username"))
 	// fmt.Println(c.PostForm("password"))
 	//check username exist or not
-	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == ""  {
+	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == "" {
 		util.CallServerError(c, "field can't be null", nil)
 		return
 	}
@@ -89,7 +91,7 @@ func FetchAllUser(c *gin.Context) {
 			Email:     item.Email,
 			Name:      item.Name,
 			Username:  item.Username,
-			Balance: item.Balance,
+			Balance:   item.Balance,
 		})
 	}
 	util.CallSuccessOK(c, "Fetch All User Data ", user)
@@ -101,7 +103,7 @@ func UpdateUser(c *gin.Context) {
 	ID := c.Param("id")
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
 	log.Println(token.Valid, tk, err)
@@ -112,12 +114,12 @@ func UpdateUser(c *gin.Context) {
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
-		Balance: balance,
+		Balance:  balance,
 	}
 	config.DB.First(&users, ID)
 
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "Paylist not found, make sure to specify the ID", nil)
+		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
 		return
 	}
 
@@ -134,7 +136,7 @@ func DeleteUser(c *gin.Context) {
 	usersID := c.Param("id")
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
 	log.Println(token.Valid, tk, err)
@@ -160,7 +162,7 @@ func FetchSingleUser(c *gin.Context) {
 	usersID := c.Param("id")
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error){
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
 	log.Println(token.Valid, tk, err)
@@ -179,7 +181,7 @@ func FetchSingleUser(c *gin.Context) {
 		Email:     users.Email,
 		Name:      users.Name,
 		Username:  users.Username,
-		Balance : users.Balance,
+		Balance:   users.Balance,
 	}
 	util.CallSuccessOK(c, "success fetch single data", user)
 }
@@ -211,8 +213,8 @@ func Login(c *gin.Context) {
 	expirationTime := time.Now().Add(12 * time.Hour)
 	tk := &Token{
 		Username: user.Username,
-		StandardClaims : jwt.StandardClaims{
-			ExpiresAt : expirationTime.Unix(),
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
 		},
 	}
 	//Create JWT token
@@ -253,7 +255,7 @@ func Auth(c *gin.Context) {
 	})
 	config.DB.Model(&logging).Where("token = ? ", tokenString).Find(&logging)
 	if logging.Token == "" {
-		util.CallServerError(c,"you have to sign in first", nil)
+		util.CallServerError(c, "you have to sign in first", nil)
 		c.Abort()
 		return
 	}
@@ -272,7 +274,7 @@ func Auth(c *gin.Context) {
 func RefreshToken(c *gin.Context) {
 	claim := Token{}
 	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error){
+	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
 	log.Println(token.Valid, claim, err)
@@ -282,7 +284,7 @@ func RefreshToken(c *gin.Context) {
 	}
 	expirationTime := time.Now().Add(12 * time.Hour)
 	claim.ExpiresAt = expirationTime.Unix()
-	tokenn:= jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
+	tokenn := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
 	tknString, err := tokenn.SignedString([]byte("secret"))
 	if err != nil {
 		c.Writer.WriteHeader(http.StatusInternalServerError)
@@ -297,7 +299,7 @@ func RefreshToken(c *gin.Context) {
 }
 
 //Logout handle logout user
-func Logout(c *gin.Context){
+func Logout(c *gin.Context) {
 	logging := &model.Logging{}
 	tokenStr := c.GetHeader("Authorization")
 	token := config.DB.Model(&logging).Where("token = ?", tokenStr).Find(&logging).Error

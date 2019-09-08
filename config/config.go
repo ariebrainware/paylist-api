@@ -8,8 +8,9 @@ import (
 	"os"
 
 	"github.com/jinzhu/gorm"
-	"github.com/ariebrainware/paylist-api/model"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+
+	"github.com/ariebrainware/paylist-api/model"
 )
 
 // Config is a configuration model
