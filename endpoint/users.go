@@ -123,6 +123,11 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	if balance == 0 || balance < 0 {
+		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
+		return
+	}
+
 	errf := config.DB.Model(&users).Where("username = ?", username).Update(&updatedUser).Error
 	if errf != nil {
 		util.CallServerError(c, "Failed to update user", errf)
@@ -230,11 +235,16 @@ func Login(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	logging.Token = tokenString
-	logging.Username = username
-	logging.UserStatus = true
-	config.DB.Save(&logging)
-	
+	data := &model.Logging{
+		Token:      tokenString,
+		Username:   username,
+		UserStatus: true,
+	}
+	if err = config.DB.Model(&logging).Save(&data).Error; err !=nil {
+		util.CallServerError(c,"fail to save logging data",err)
+		return
+	}
+
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:    "token",
 		Value:   tokenString,
@@ -261,13 +271,13 @@ func Auth(c *gin.Context) {
 	}
 	if token != nil && err == nil {
 		fmt.Println("token verified")
-	} else {
-		result := gin.H{
-			"message": "not authorized",
-		}
-		c.JSON(http.StatusUnauthorized, result)
-		c.Abort()
+		return
 	}
+	result := gin.H{
+		"message": "not authorized",
+	}
+	c.JSON(http.StatusUnauthorized, result)
+	c.Abort()
 }
 
 //RefreshToken hanlde refreshing expired token
