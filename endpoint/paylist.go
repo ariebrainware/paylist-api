@@ -152,28 +152,55 @@ func UpdateUserPaylist(c *gin.Context) {
 	util.CallSuccessOK(c, "paylist successfully updated!", paylist)
 }
 
-//CreateUserPaylist handle add user paylist
-func CreateUserPaylist(c *gin.Context) {
-	//var paylist model.Paylist
-	var users model.User
-	var sisa int
+// UpdateUserPaylistStatus is a function to mark the paylist completed or not
+func UpdateUserPaylistStatus(c *gin.Context) {
+	status := c.PostForm("status")
+	paylist := model.Paylist{}
+	user := model.User{}
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+
+	// Parse the token payload and validate the username is own the paylist
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+	}
 	username := tk.Username
-	amount, _ := strconv.Atoi(c.PostForm("amount"))
-	eror := config.DB.Table("users").Select("balance").Where("username  = ?", username).First(&users).Error
-	if eror != nil {
-		util.CallErrorNotFound(c, "can't select balance", eror)
+
+	// Check User balance
+	if err = config.DB.Model(&paylist).Where("username = ?", username).First(&paylist).Error; err != nil {
+		util.CallErrorNotFound(c, "no paylist found", nil)
 		return
 	}
-	sisa = users.Balance - amount
-	users.Balance = sisa
-	config.DB.Model(&users).Where("username = ?", username).Update(&users)
-	fmt.Println("sisa", sisa)
+	if tk.Username != paylist.Username {
+		util.CallServerError(c, "not authorized", nil)
+		return
+	}
+	id, _ := strconv.Atoi(c.Param("id"))
+	if err := config.DB.Model(&paylist).Where("ID = ? AND username = ?", id, username).First(&paylist).Error; err != nil || err == gorm.ErrRecordNotFound {
+		util.CallErrorNotFound(c, "no paylist found", nil)
+		return
+	}
+	if err := config.DB.Model(&user).Select("balance").Where("username = ?", username).First(&user).Error; err != nil {
+		util.CallErrorNotFound(c, "user not found", err)
+		return
+	}
+
+	// Update the paylist status
+	s, _ := strconv.ParseBool(status)
+	if err = config.DB.Model(&paylist).Where("username = ?", tk.Username).Update("completed", s).Error; err != nil {
+		fmt.Println(err)
+		util.CallServerError(c, "fail to update paylist status", err)
+		return
+	}
+	if !s {
+		util.CallSuccessOK(c, "paylist uncompleted!", paylist)
+		return
+	}
+	util.CallSuccessOK(c, "paylist completed!", paylist)
 }
 
 //DeleteUserPaylist handle deleted user paylist
