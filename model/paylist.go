@@ -9,9 +9,9 @@ import (
 type Paylist struct {
 	gorm.Model
 	// ID     int    `json:"id"`
-	Name   string `json:"name"`
-	Amount int    `json:"amount"`
-	Username string
-	Completed bool `json:"completed"`
-	User []User `gorm:"foreignkey:username"`
+	Name      string `json:"name"`
+	Amount    int    `json:"amount"`
+	Username  string
+	Completed bool   `json:"completed"`
+	User      []User `gorm:"foreignkey:username"`
 }
