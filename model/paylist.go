@@ -12,6 +12,5 @@ type Paylist struct {
 	Name      string `json:"name"`
 	Amount    int    `json:"amount"`
 	Username  string
-	Completed bool   `json:"completed"`
-	User      []User `gorm:"foreignkey:username"`
+	Completed bool `json:"completed"`
 }
