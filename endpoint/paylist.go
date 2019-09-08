@@ -2,7 +2,6 @@ package endpoint
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -19,29 +18,43 @@ type User struct {
 	jwt.StandardClaims
 }
 
-// CreatePaylist function to create new paylist
-func CreatePaylist(c *gin.Context) {
-	amount, _ := strconv.Atoi(c.PostForm("amount"))
-	completed, _ := strconv.ParseBool("completed")
-	paylist := model.Paylist{
-		Name:      c.PostForm("name"),
-		Amount:    amount,
-		Completed: completed,
-	}
-	fmt.Println(c.PostForm("name"))
-	fmt.Println(amount)
+// CreateUserPaylist function to create new paylist
+func CreateUserPaylist(c *gin.Context) {
+	users := model.User{}
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+
+	// Parse the payload from token
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
+	username := tk.Username
 
-	paylist.Username = string(tk.Username)
-	errf := config.DB.Save(&paylist).Error
-	if errf != nil {
-		util.CallServerError(c, "fail to create paylist", errf)
-		c.Abort()
+	// Decrease user balance
+	amount, _ := strconv.Atoi(c.PostForm("amount"))
+	err = config.DB.Model(&users).Where("username  = ?", username).First(&users).Error
+	if err != nil {
+		util.CallErrorNotFound(c, "can't select balance", err)
+		return
+	}
+	finalAmount := users.Balance - amount
+	config.DB.Model(&users).Where("username = ?", username).Update("balance", finalAmount)
+	paylist := model.Paylist{
+		Name:      c.PostForm("name"),
+		Amount:    amount,
+		Username:  username,
+		Completed: false,
+	}
+
+	// Save paylist
+	err = config.DB.Model(&paylist).Save(&paylist).Error
+	if err != nil {
+		util.CallServerError(c, "fail to create paylist", err)
 		return
 	}
 	util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
