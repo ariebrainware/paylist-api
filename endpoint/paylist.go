@@ -205,38 +205,57 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 
 //DeleteUserPaylist handle deleted user paylist
 func DeleteUserPaylist(c *gin.Context) {
-	var paylist model.Paylist
-	var user model.User
-	var balance int
-	id := c.Param("id")
+	paylistID, _ := strconv.Atoi(c.Param("id"))
+	paylist := model.Paylist{}
+	user := model.User{}
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+
+	if paylistID == 0 {
+		util.CallUserError(c, "please specify paylist id", nil)
+		return
+	}
+	// Parse the token payload and validate the username is own the paylist
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+	}
 	username := tk.Username
-	errf := config.DB.Table("paylists").Select("amount, completed").Where("ID = ? and username = ?", id, username).Find(&paylist).Error
-	if errf != nil {
-		util.CallErrorNotFound(c, "can't select amount", errf)
+	config.DB.Model(&paylist).Where("username = ?", username).First(&paylist)
+	if tk.Username != paylist.Username {
+		util.CallServerError(c, "user not authorized", nil)
+		c.Abort()
 		return
 	}
-	fmt.Println(paylist.Amount)
-	erf := config.DB.Table("users").Select("balance").Where("username = ?", username).Find(&user).Error
-	if erf != nil {
-		util.CallErrorNotFound(c, "can't select balance", erf)
-		return
-	}
-	fmt.Println(user.Balance)
-	if paylist.Completed == false {
-		balance = paylist.Amount + user.Balance
-		user.Balance = balance
-		fmt.Println(user.Balance)
-		config.DB.Model(&user).Where("username = ?", username).Update(&user)
-	}
-	eror := config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Delete(&paylist).Error
-	if eror == nil {
-		util.CallSuccessOK(c, "paylist successfully deleted!", nil)
-	}
-}
 
+	if err = config.DB.Where("id = ?", paylistID).First(&paylist).Error; err != nil {
+		util.CallErrorNotFound(c, "no paylist found!", nil)
+		c.Abort()
+		return
+	}
+
+	if err = config.DB.Model(&paylist).Select("amount, completed").Where("ID = ? and username = ?", paylistID, username).First(&paylist).Error; err != nil {
+		util.CallErrorNotFound(c, "can't select amount", err)
+		return
+	}
+
+	if err := config.DB.Model(&user).Select("balance").Where("username = ?", username).First(&user).Error; err != nil {
+		util.CallErrorNotFound(c, "can't select balance", err)
+		return
+	}
+	if paylist.Completed == false {
+		b := paylist.Amount + user.Balance
+		if err = config.DB.Table("users").Where("username = ?", username).Update("balance", b).Error; err != nil {
+			fmt.Println(&user.Balance)
+			util.CallServerError(c, "fail to update the user balance", err)
+			return
+		}
+	}
+	if err := config.DB.Model(&paylist).Where("ID = ? and username = ?", paylistID, username).Delete(&paylist).Error; err != nil {
+		util.CallServerError(c, "paylist fail to delete", err)
+	}
+	util.CallSuccessOK(c, "paylist successfully deleted!", nil)
+}
