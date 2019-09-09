@@ -144,7 +144,7 @@ func TestCreatePaylist(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 	router := gin.Default()
-	router.POST("/paylist", CreatePaylist)
+	router.POST("/paylist", CreateUserPaylist)
 	router.ServeHTTP(resp, req)
 	if resp.Code != 201 {
 		t.Errorf("router returned wrong status code: got %d",
@@ -160,7 +160,7 @@ func TestDeletePaylist(t *testing.T) {
 		fmt.Println(err)
 	}
 	router := gin.Default()
-	router.DELETE("/paylist/:id", DeletePaylist)
+	router.DELETE("/paylist/:id", DeleteUserPaylist)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
@@ -179,7 +179,7 @@ func TestUpdatePaylist(t *testing.T) {
 		fmt.Println(err)
 	}
 	router := gin.Default()
-	router.PUT("/paylist/:id", UpdatePaylist)
+	router.PUT("/paylist/:id", UpdateUserPaylist)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {

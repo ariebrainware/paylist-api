@@ -53,8 +53,6 @@ func Conf() {
 	if err != nil {
 		panic("failed connect to database")
 	}
-	DB.AutoMigrate(&model.Paylist{})
-	DB.AutoMigrate(&model.User{})
-	//DB.Model(&model.Paylist{}).AddForeignKey("username", "user(username)", "CASCADE", "CASCADE")
+	DB.AutoMigrate(&model.Paylist{}, &model.User{})
 	fmt.Println("Schema migrated!!")
 }

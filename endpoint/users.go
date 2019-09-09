@@ -2,7 +2,6 @@ package endpoint
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -41,12 +40,7 @@ func CreateUser(c *gin.Context) {
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
-		//Balance: balance,
 	}
-	// fmt.Println(c.PostForm("email"))
-	// fmt.Println(c.PostForm("name"))
-	// fmt.Println(c.PostForm("username"))
-	// fmt.Println(c.PostForm("password"))
 	//check username exist or not
 	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == "" {
 		util.CallServerError(c, "field can't be null", nil)
@@ -63,7 +57,7 @@ func CreateUser(c *gin.Context) {
 		util.CallServerError(c, "password encryption failed", err)
 		return
 	}
-	//util.CallSuccessOK(c, "password encryption success!", password)
+	
 	users.Password = string(password)
 	err = config.DB.Save(&users).Error
 	if err != nil {
@@ -106,7 +100,11 @@ func UpdateUser(c *gin.Context) {
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
 	username := tk.Username
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	updatedUser := model.User{
@@ -144,7 +142,11 @@ func DeleteUser(c *gin.Context) {
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
 	username := tk.Username
 
 	config.DB.First(&users, usersID)
@@ -162,7 +164,6 @@ func DeleteUser(c *gin.Context) {
 
 // FetchSingleUser function to get single user
 func FetchSingleUser(c *gin.Context) {
-	//logging := &model.Logging{}
 	var users model.User
 	usersID := c.Param("id")
 	tk := User{}
@@ -170,7 +171,11 @@ func FetchSingleUser(c *gin.Context) {
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
 	username := tk.Username
 
 	errf := config.DB.Model(&model.User{}).Where("ID = ? and username = ?", usersID, username).Find(&users).Error
@@ -215,7 +220,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(12 * time.Hour)
+	expirationTime := time.Now().Add(1 * time.Minute)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -287,7 +292,11 @@ func RefreshToken(c *gin.Context) {
 	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	log.Println(token.Valid, claim, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
 	if time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
 		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
@@ -312,17 +321,29 @@ func RefreshToken(c *gin.Context) {
 func Logout(c *gin.Context) {
 	logging := &model.Logging{}
 	tokenStr := c.GetHeader("Authorization")
-	token := config.DB.Model(&logging).Where("token = ?", tokenStr).Find(&logging).Error
-	if token != nil {
-		util.CallServerError(c, "failed to generate session token", token)
-		return
-	}
-	fmt.Println(logging.UserStatus)
 	erf := config.DB.Model(&logging).Where("token = ?", tokenStr).Update("userStatus", false).Error
 	if erf != nil {
 		fmt.Println(erf)
 	}
-	fmt.Println(logging.UserStatus)
-	config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging)
+	err := config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging).Error
+	if err != nil {
+		fmt.Println(err)
+		util.CallServerError(c,"fail when try to delete the logging", err)
+	}
 	util.CallSuccessOK(c, "logged out", logging.UserStatus)
+}
+
+//SignOut for check token expired
+func SignOut(c *gin.Context) {
+	claim := Token{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, _ := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
+		util.CallSuccessOK(c,"token invalid and expired", tokenString)
+	}
+	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		util.CallSuccessOK(c,"token valid and not expired", tokenString)
+	}
 }

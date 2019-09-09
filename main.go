@@ -51,7 +51,7 @@ func main() {
 
 	v1.GET("/user/:id", ep.Auth, ep.FetchSingleUser)
 	v1.GET("/users", ep.Auth, ep.FetchAllUser)
-	v1.POST("/user/signout", ep.Logout)
+	v1.GET("/users/signout", ep.SignOut, ep.Logout)
 	v1.POST("/user/signin", ep.Login)
 	v1.POST("/user/signup", ep.CreateUser)
 	v1.POST("/user/refresh-token", ep.RefreshToken)

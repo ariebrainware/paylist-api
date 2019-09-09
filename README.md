@@ -36,6 +36,25 @@ Use GORM
 
 Database design will automatically create by using `db.AutoMigrate`. So you just need to config database connection string inside `config.go`, then run `main.go`
 
+Goose Migration
+
+Create a new SQL migration.
+```
+goose create add_some_column sql
+```
+
+Usage: goose [OPTIONS] DRIVER DBSTRING COMMAND
+```
+goose mysql "user:password@/dbname?parseTime=true" status
+```
+
+Commands:
+```
+up                   Migrate the DB to the most recent version available
+down                 Roll back the version by 1
+status               Dump the migration status for the current DB
+create NAME [sql|go] Creates new migration file with the current timestamp
+```
 
 ```
 Paylists Table

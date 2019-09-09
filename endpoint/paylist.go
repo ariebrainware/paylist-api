@@ -27,7 +27,11 @@ func FetchAllPaylist(c *gin.Context) {
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	fmt.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
 	username := tk.Username
 	errf := config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist).Error
 	if errf != nil {
@@ -46,7 +50,11 @@ func FetchSinglePaylist(c *gin.Context) {
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
-	fmt.Println(token.Valid, tk, err)
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
 	username := tk.Username
 	errf := config.DB.Model(&model.Paylist{}).Where("ID = ? and username = ?", paylistID, username).Find(&paylist).Error
 	if errf != nil {
