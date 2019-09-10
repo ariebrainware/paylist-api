@@ -214,8 +214,8 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 //DeleteUserPaylist handle deleted user paylist
 func DeleteUserPaylist(c *gin.Context) {
 	paylistID, _ := strconv.Atoi(c.Param("id"))
-	paylist := model.Paylist{}
-	user := model.User{}
+	paylist := &model.Paylist{}
+	user := &model.User{}
 	tk := User{}
 
 	if paylistID == 0 {
@@ -232,15 +232,15 @@ func DeleteUserPaylist(c *gin.Context) {
 		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
 	}
 	username := tk.Username
-	config.DB.Model(&paylist).Where("username = ?", username).First(&paylist)
-	if tk.Username != paylist.Username {
-		util.CallServerError(c, "user not authorized", nil)
+	if err = config.DB.Where("ID = ?", paylistID).Find(&paylist).Error; err != nil {
+		util.CallErrorNotFound(c, "no paylist found!", err)
 		c.Abort()
 		return
 	}
-
-	if err = config.DB.Where("id = ?", paylistID).First(&paylist).Error; err != nil {
-		util.CallErrorNotFound(c, "no paylist found!", nil)
+	
+	config.DB.Model(&paylist).Where("username = ?", username).First(&paylist)
+	if tk.Username != paylist.Username {
+		util.CallServerError(c, "user not authorized", nil)
 		c.Abort()
 		return
 	}

@@ -220,7 +220,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(1 * time.Minute)
+	expirationTime := time.Now().Add(2 * time.Minute)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -336,14 +336,25 @@ func Logout(c *gin.Context) {
 //SignOut for check token expired
 func SignOut(c *gin.Context) {
 	claim := Token{}
+	logging := &model.Logging{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, _ := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallSuccessOK(c,"token invalid and expired", tokenString)
+		util.CallSuccessOK(c,"invalid token and expired",tokenString)
+		err := config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
+		if err != nil {
+			fmt.Println(err)
+			util.CallServerError(c,"fail when try to delete the logging", err)
+		}
 	}
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		util.CallSuccessOK(c,"token valid and not expired", tokenString)
+		util.CallSuccessOK(c,"valid token and not expired", tokenString)
+		return
 	}
+	c.JSON(http.StatusForbidden, gin.H{
+		"msg": "please sign in again!",
+	})
+	c.Abort()
 }
