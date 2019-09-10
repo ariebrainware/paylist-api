@@ -1,12 +1,7 @@
 {
-    "Db": {
-        "Host": "localhost",
-        "User": "coba",
-        "Password": "admin123",
-        "Database": "paylist"
-    },
-    "Listen": {
-        "Address": "*",
-        "Port": "3306"
-    }
+    "Host": "localhost",
+    "User": "postgres",
+    "Password": "admin123",
+    "Database": "rush-crowd",
+    "Port": "5432"
 }

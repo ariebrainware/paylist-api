@@ -9,6 +9,6 @@ type Paylist struct {
 	gorm.Model
 	Name      string `json:"name"`
 	Amount    int    `json:"amount"`
-	Username  string
+	Username  string `json:"username"`
 	Completed bool `json:"completed"`
 }

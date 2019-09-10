@@ -57,5 +57,5 @@ func main() {
 	v1.POST("/user/refresh-token", ep.RefreshToken)
 	v1.PUT("/user/:id",ep.SignOut, ep.Auth, ep.UpdateUser)
 	v1.DELETE("/user/:id", ep.SignOut, ep.Auth, ep.DeleteUser)
-	router.Run(":3002")
+	router.Run(":8000")
 }
