@@ -2,6 +2,6 @@
     "Host": "localhost",
     "User": "postgres",
     "Password": "admin123",
-    "Database": "rush-crowd",
+    "Database": "paylist",
     "Port": "5432"
 }
