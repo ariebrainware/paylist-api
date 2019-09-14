@@ -26,6 +26,16 @@ func CallErrorNotFound(c *gin.Context, msg string, err error) {
 	})
 }
 
+// CallUserError is for return error from user side
+func CallUserError(c *gin.Context, msg string, err error) {
+	c.JSON(http.StatusBadRequest, gin.H{
+		"success": false,
+		"error":   err,
+		"msg":     msg,
+		"data":    map[string]interface{}{},
+	})
+}
+
 // CallServerError is for return API response server error
 func CallServerError(c *gin.Context, msg string, err error) {
 	c.JSON(http.StatusInternalServerError, gin.H{

@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-
-	"github.com/gin-gonic/gin"
-	//"gopkg.in/go-playground/assert.v1"
+	"net/http/httptest"
+	"github.com/gin-gonic/gin"	
 )
 
 // fun TestFetchSingleUser Functional Testing for FetchSingleUser
@@ -18,11 +16,10 @@ func TestFetchSingleUser(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	router := gin.Default()
-	router.GET("/users/:id", FetchSingleUser)
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-	//assert.Equal(t, resp.Code, 200)
+    router := gin.Default()
+    router.GET("/users/:id", FetchSingleUser)
+    resp := httptest.NewRecorder()
+    router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -36,11 +33,10 @@ func TestFetchAllUser(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	router := gin.Default()
-	router.GET("/users", FetchAllUser)
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-	//assert.Equal(t, resp.Code, 200)
+    router := gin.Default()
+    router.GET("/users", FetchAllUser)
+    resp := httptest.NewRecorder()
+    router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -148,7 +144,7 @@ func TestCreatePaylist(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 	router := gin.Default()
-	router.POST("/paylist", CreatePaylist)
+	router.POST("/paylist", CreateUserPaylist)
 	router.ServeHTTP(resp, req)
 	if resp.Code != 201 {
 		t.Errorf("router returned wrong status code: got %d",
@@ -164,7 +160,7 @@ func TestDeletePaylist(t *testing.T) {
 		fmt.Println(err)
 	}
 	router := gin.Default()
-	router.DELETE("/paylist/:id", DeletePaylist)
+	router.DELETE("/paylist/:id", DeleteUserPaylist)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
@@ -183,7 +179,7 @@ func TestUpdatePaylist(t *testing.T) {
 		fmt.Println(err)
 	}
 	router := gin.Default()
-	router.PUT("/paylist/:id", UpdatePaylist)
+	router.PUT("/paylist/:id", UpdateUserPaylist)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {

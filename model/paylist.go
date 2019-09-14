@@ -7,7 +7,8 @@ import (
 // Paylist is a model for paylist table
 type Paylist struct {
 	gorm.Model
-	// ID     int    `json:"id"`
-	Name   string `json:"name"`
-	Amount int    `json:"amount"`
+	Name      string `json:"name"`
+	Amount    int    `json:"amount"`
+	Username  string
+	Completed bool `json:"completed"`
 }

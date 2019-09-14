@@ -23,9 +23,9 @@ func main() {
 		//Paylist Endpoint
 		{Method: "GET", URL: "/paylist", Description: "Get/Fetch All Paylist Data"},
 		{Method: "GET", URL: "/paylist/:id", Description: "Get/Fetch Single Paylist Data by ID"},
-		{Method: "POST", URL: "/paylist", Description: "Create Paylist Data"},
+		{Method: "POST", URL: "/paylist", Description: "Create/Insert User-Paylist Data"},
 		{Method: "PUT", URL: "/paylist/:id", Description: "Edit/Update Paylist Data by ID"},
-		{Method: "DELETE", URL: "/paylist/:id", Description: "Delete Paylist Data by ID"},
+		{Method: "DELETE", URL: "/paylist/:id", Description: "Delete User-Paylist Data by ID"},
 		//User Endpoint
 		{Method: "GET", URL: "/users", Description: "Get/Fetch All User Data"},
 		{Method: "GET", URL: "/users/:id", Description: "Get/Fetch Single User Data by ID"},
@@ -33,6 +33,9 @@ func main() {
 		{Method: "POST", URL: "/users/signin", Description: "Sign In"},
 		{Method: "PUT", URL: "/users/:id", Description: "Edit/Update User Data by ID"},
 		{Method: "DELETE", URL: "/users/:id", Description: "Delete User Data by ID"},
+		{Method: "PUT", URL: "/user-paylist/:id", Description: "Update User-Paylist by ID"},
+		{Method: "GET", URL: "/user/signout", Description: "Sign Out / Logout"},
+		{Method: "POST", URL: "/users/refresh-token", Description: "Refresh Expired Token"},
 	}
 
 	router.GET("/", func(c *gin.Context) {
@@ -41,14 +44,18 @@ func main() {
 	v1 := router.Group("/v1/paylist/")
 	v1.GET("/paylist", ep.Auth, ep.FetchAllPaylist)
 	v1.GET("/paylist/:id", ep.Auth, ep.FetchSinglePaylist)
-	v1.POST("/paylist", ep.Auth, ep.CreatePaylist)
-	v1.PUT("/paylist/:id", ep.Auth, ep.UpdatePaylist)
-	v1.DELETE("/paylist/:id", ep.Auth, ep.DeletePaylist)
-	v1.GET("/users/:id", ep.Auth, ep.FetchSingleUser)
+	v1.POST("/paylist/", ep.Auth, ep.CreateUserPaylist)
+	v1.PUT("/paylist/:id/status", ep.Auth, ep.UpdateUserPaylistStatus)
+	v1.PUT("/paylist/:id", ep.Auth, ep.UpdateUserPaylist)
+	v1.DELETE("/paylist/:id", ep.Auth, ep.DeleteUserPaylist)
+
+	v1.GET("/user/:id", ep.Auth, ep.FetchSingleUser)
 	v1.GET("/users", ep.Auth, ep.FetchAllUser)
-	v1.POST("/users/signin", ep.Login)
-	v1.POST("/users/signup", ep.CreateUser)
-	v1.PUT("/users/:id", ep.Auth, ep.UpdateUser)
-	v1.DELETE("/users/:id", ep.Auth, ep.DeleteUser)
+	v1.GET("/users/signout", ep.SignOut, ep.Logout)
+	v1.POST("/user/signin", ep.Login)
+	v1.POST("/user/signup", ep.CreateUser)
+	v1.POST("/user/refresh-token", ep.RefreshToken)
+	v1.PUT("/user/:id", ep.Auth, ep.UpdateUser)
+	v1.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
 	router.Run(":3002")
 }

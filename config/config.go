@@ -9,6 +9,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+
+	"github.com/ariebrainware/paylist-api/model"
 )
 
 // Config is a configuration model
@@ -51,4 +53,6 @@ func Conf() {
 	if err != nil {
 		panic("failed connect to database")
 	}
+	DB.AutoMigrate(&model.Paylist{}, &model.User{})
+	fmt.Println("Schema migrated!!")
 }
