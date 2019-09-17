@@ -1,8 +1,8 @@
 {
     "Db": {
         "Host": "localhost",
-        "User": "coba",
-        "Password": "admin123",
+        "User": "rob0ne",
+        "Password": "@_L0c4lDB",
         "Database": "paylist"
     },
     "Listen": {

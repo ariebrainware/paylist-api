@@ -57,7 +57,7 @@ func CreateUser(c *gin.Context) {
 		util.CallServerError(c, "password encryption failed", err)
 		return
 	}
-	
+
 	users.Password = string(password)
 	err = config.DB.Save(&users).Error
 	if err != nil {
@@ -220,7 +220,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(1 * time.Minute)
+	expirationTime := time.Now().Add(720 * time.Minute)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -245,8 +245,8 @@ func Login(c *gin.Context) {
 		Username:   username,
 		UserStatus: true,
 	}
-	if err = config.DB.Model(&logging).Save(&data).Error; err !=nil {
-		util.CallServerError(c,"fail to save logging data",err)
+	if err = config.DB.Model(&logging).Save(&data).Error; err != nil {
+		util.CallServerError(c, "fail to save logging data", err)
 		return
 	}
 
@@ -328,7 +328,7 @@ func Logout(c *gin.Context) {
 	err := config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging).Error
 	if err != nil {
 		fmt.Println(err)
-		util.CallServerError(c,"fail when try to delete the logging", err)
+		util.CallServerError(c, "fail when try to delete the logging", err)
 	}
 	util.CallSuccessOK(c, "logged out", logging.UserStatus)
 }
@@ -341,9 +341,9 @@ func SignOut(c *gin.Context) {
 		return []byte("secret"), nil
 	})
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallSuccessOK(c,"token invalid and expired", tokenString)
+		util.CallSuccessOK(c, "token invalid and expired", tokenString)
 	}
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		util.CallSuccessOK(c,"token valid and not expired", tokenString)
+		util.CallSuccessOK(c, "token valid and not expired", tokenString)
 	}
 }
