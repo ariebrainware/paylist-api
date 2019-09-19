@@ -9,7 +9,8 @@ balance int NULL,
 created_at timestamp with time zone,
 deleted_at timestamp with time zone,
 updated_at timestamp with time zone,
-PRIMARY KEY(id, username)
+PRIMARY KEY(id),
+UNIQUE (username)
 );
 -- +goose Down
 DROP TABLE Users;

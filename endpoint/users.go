@@ -343,6 +343,10 @@ func SignOut(c *gin.Context) {
 	})
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
 		util.CallSuccessOK(c,"invalid token and expired",tokenString)
+		erf := config.DB.Model(&logging).Where("token = ?", tokenString).Update("userStatus", false).Error
+			if erf != nil {
+				fmt.Println(erf)
+			}
 		err := config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
 		if err != nil {
 			fmt.Println(err)
