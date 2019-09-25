@@ -44,7 +44,7 @@ func main() {
 	v1 := router.Group("/v1/paylist/")
 	v1.GET("/paylist", ep.SignOut, ep.Auth, ep.FetchAllPaylist)
 	v1.GET("/paylist/:id", ep.SignOut, ep.Auth, ep.FetchSinglePaylist)
-	v1.POST("/paylist/", ep.SignOut, ep.Auth, ep.CreateUserPaylist)
+	v1.POST("/paylist", ep.SignOut, ep.Auth, ep.CreateUserPaylist)
 	v1.PUT("/paylist/:id/status",ep.SignOut, ep.Auth, ep.UpdateUserPaylistStatus)
 	v1.PUT("/paylist/:id", ep.SignOut,ep.Auth, ep.UpdateUserPaylist)
 	v1.DELETE("/paylist/:id", ep.SignOut, ep.Auth, ep.DeleteUserPaylist)

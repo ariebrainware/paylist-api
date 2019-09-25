@@ -41,11 +41,12 @@ func CreateUser(c *gin.Context) {
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
 	}
-	//check username exist or not
+	//check field can't empty
 	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == "" {
-		util.CallServerError(c, "field can't be null", nil)
+		util.CallUserError(c, "field can't be null", nil)
 		return
 	}
+	//check username exist or not
 	var exists model.User
 	if err := config.DB.Where("username = ?", users.Username).First(&exists).Error; err == nil {
 		util.CallServerError(c, "username already exist", err)
@@ -220,7 +221,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(2 * time.Minute)
+	expirationTime := time.Now().Add(50 * time.Minute)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -234,16 +235,19 @@ func Login(c *gin.Context) {
 		util.CallServerError(c, "error create token", err)
 		c.Abort()
 	}
-	config.DB.Model(&logging).Find(&logging)
-	if logging.Username == username {
-		util.CallServerError(c, "already login", nil)
-		c.Abort()
-		return
-	}
 	data := &model.Logging{
 		Token:      tokenString,
 		Username:   username,
 		UserStatus: true,
+	}
+	config.DB.Model(&logging).Find(&logging)
+	if logging.Username == username {
+		// c.JSON(201, gin.H{
+		// 	Name:    "token",
+		// 	Value:   tokenString,})
+		util.CallUserFound(c, "already login", nil)
+		return
+		c.Abort()
 	}
 	if err = config.DB.Model(&logging).Save(&data).Error; err !=nil {
 		util.CallServerError(c,"fail to save logging data",err)
@@ -342,7 +346,7 @@ func SignOut(c *gin.Context) {
 		return []byte("secret"), nil
 	})
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallSuccessOK(c,"invalid token and expired",tokenString)
+		util.CallServerError(c,"invalid token and expired",nil)
 		erf := config.DB.Model(&logging).Where("token = ?", tokenString).Update("userStatus", false).Error
 			if erf != nil {
 				fmt.Println(erf)

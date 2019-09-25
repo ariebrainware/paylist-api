@@ -55,3 +55,12 @@ func CallSuccessOK(c *gin.Context, msg string, data interface{}) {
 		"data":    data,
 	})
 }
+
+func CallUserFound(c *gin.Context, msg string, data interface{}) {
+	c.JSON(202, gin.H{
+		"success": true,
+		"error":   "",
+		"msg":     msg,
+		"data":    data,
+	})
+}
