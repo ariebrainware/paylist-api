@@ -29,6 +29,7 @@ type user1 struct {
 	Email     string     `json:"email"`
 	Name      string     `json:"name"`
 	Username  string     `json:"username"`
+	Password string `json:"password"`
 	Balance   int        `json:"balance"`
 }
 
@@ -71,7 +72,18 @@ func CreateUser(c *gin.Context) {
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	config.DB.Find(&users)
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
+	username := tk.Username
+	config.DB.Model(&users).Where("username = ? ", username).Find(&users)
 
 	if len(users) <= 0 {
 		util.CallErrorNotFound(c, "No User Found!", nil)
@@ -86,10 +98,11 @@ func FetchAllUser(c *gin.Context) {
 			Email:     item.Email,
 			Name:      item.Name,
 			Username:  item.Username,
+			Password: item.Password,
 			Balance:   item.Balance,
 		})
 	}
-	util.CallSuccessOK(c, "Fetch All User Data ", user)
+	util.CallSuccessOK(c, "Fetch All Users Data ", user)
 }
 
 // UpdateUser function to update user information
@@ -127,7 +140,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	errf := config.DB.Model(&users).Where("username = ?", username).Update(&updatedUser).Error
+	errf := config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update(&updatedUser).Error
 	if errf != nil {
 		util.CallServerError(c, "Failed to update user", errf)
 	}
@@ -221,7 +234,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(50 * time.Minute)
+	expirationTime := time.Now().Add(120 * time.Minute)
 	tk := &Token{
 		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
@@ -356,9 +369,10 @@ func SignOut(c *gin.Context) {
 			fmt.Println(err)
 			util.CallServerError(c,"fail when try to delete the logging", err)
 		}
+		
 	}
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		util.CallSuccessOK(c,"valid token and not expired", tokenString)
+		// util.CallSuccessOK(c,"valid token and not expired", tokenString)
 		return
 	}
 	c.JSON(http.StatusForbidden, gin.H{
