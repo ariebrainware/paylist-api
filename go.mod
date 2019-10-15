@@ -14,7 +14,7 @@ require (
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
-	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/ugorji/go v1.1.7 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2 // indirect
 	golang.org/x/sys v0.0.0-20191010194322-b09406accb47 // indirect

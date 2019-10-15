@@ -2,13 +2,13 @@ package endpoint
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"net/http"
 	"strconv"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/ariebrainware/paylist-api/config"
@@ -131,7 +131,7 @@ func UpdateUser(c *gin.Context) {
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
-		Balance: balance,
+		Balance:  balance,
 	}
 	config.DB.First(&users, ID)
 
