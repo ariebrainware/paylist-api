@@ -122,6 +122,10 @@ func UpdateUser(c *gin.Context) {
 	}
 	username := tk.Username
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
+	if balance == 0 || balance < 0 {
+		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
+		return
+	}
 	updatedUser := model.User{
 		Email:    c.PostForm("email"),
 		Name:     c.PostForm("name"),
