@@ -10,5 +10,5 @@ type Paylist struct {
 	Name      string `json:"name"`
 	Amount    int    `json:"amount"`
 	Username  string `json:"username"`
-	Completed bool `json:"completed"`
+	Completed bool   `json:"completed"`
 }

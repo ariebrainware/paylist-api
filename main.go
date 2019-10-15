@@ -44,9 +44,9 @@ func main() {
 	v1 := router.Group("/v1/paylist/")
 	v1.GET("/paylist", ep.Auth, ep.SignOut, ep.FetchAllPaylist)
 	v1.GET("/paylist/:id", ep.Auth, ep.SignOut, ep.FetchSinglePaylist)
-	v1.POST("/paylist",  ep.Auth, ep.SignOut, ep.CreateUserPaylist)
-	v1.PUT("/status/:id",ep.Auth, ep.SignOut, ep.UpdateUserPaylistStatus)
-	v1.PUT("/paylist/:id", ep.Auth,ep.SignOut, ep.UpdateUserPaylist)
+	v1.POST("/paylist", ep.Auth, ep.SignOut, ep.CreateUserPaylist)
+	v1.PUT("/status/:id", ep.Auth, ep.SignOut, ep.UpdateUserPaylistStatus)
+	v1.PUT("/paylist/:id", ep.Auth, ep.SignOut, ep.UpdateUserPaylist)
 	v1.DELETE("/paylist/:id", ep.Auth, ep.DeleteUserPaylist)
 
 	v1.GET("/user/:id", ep.SignOut, ep.Auth, ep.FetchSingleUser)
@@ -56,7 +56,7 @@ func main() {
 	v1.POST("/user/signup", ep.CreateUser)
 	v1.POST("/user/refresh-token", ep.RefreshToken)
 	v1.POST("/addsaldo", ep.Auth, ep.SignOut, ep.AddBalance)
-	v1.PUT("/user/:id",ep.SignOut, ep.Auth, ep.UpdateUser)
+	v1.PUT("/user/:id", ep.SignOut, ep.Auth, ep.UpdateUser)
 	v1.DELETE("/user/:id", ep.SignOut, ep.Auth, ep.DeleteUser)
 	router.Run(":8000")
 }
