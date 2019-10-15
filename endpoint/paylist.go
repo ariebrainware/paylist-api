@@ -80,7 +80,6 @@ func CreateUserPaylist(c *gin.Context) {
 		return
 	}
 	username := tk.Username
-
 	// Decrease user balance
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	err = config.DB.Model(&users).Where("username  = ?", username).First(&users).Error
@@ -178,14 +177,6 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	username := tk.Username
 
 	// Check User balance
-	// if err = config.DB.Model(&paylist).Where("username = ?", username).First(&paylist).Error; err != nil {
-	// 	util.CallErrorNotFound(c, "no paylist found", nil)
-	// 	return
-	// }
-	// if tk.Username != paylist.Username {
-	// 	util.CallServerError(c, "not authorized", nil)
-	// 	return
-	// }
 	id, _ := strconv.Atoi(c.Param("id"))
 	if err := config.DB.Model(&paylist).Where("ID = ? AND username = ?", id, username).First(&paylist).Error; err != nil || err == gorm.ErrRecordNotFound {
 		util.CallErrorNotFound(c, "no paylist found", nil)
@@ -197,26 +188,14 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	}
 
 	// Update the paylist status
-	// s, _ := strconv.ParseBool(status)
-	// if err = config.DB.Model(&paylist).Where("username = ?", tk.Username).Update("completed", s).Error; err != nil {
-	// 	fmt.Println(err)
-	// 	util.CallServerError(c, "fail to update paylist status", err)
-	// 	return
-	// }
-	// if !s {
-	// 	util.CallSuccessOK(c, "paylist uncompleted!", paylist)
-	// 	return
-	// }
-	// util.CallSuccessOK(c, "paylist completed!", paylist)
-
 	if user.Balance >= 0 && paylist.Completed == false {
 		paylist.Completed = true
-		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
+		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
 	} else if user.Balance < 0 && paylist.Completed == false {
 		paylist.Completed = false
-		config.DB.Model(&paylist).Where("ID = ? and username = ?",id, username).Update(&paylist)
+		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
 	}
-	util.CallSuccessOK(c,"successfully update user paylist",paylist.Completed)
+	util.CallSuccessOK(c, "successfully update user paylist", paylist.Completed)
 }
 
 //DeleteUserPaylist handle deleted user paylist
@@ -245,7 +224,7 @@ func DeleteUserPaylist(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	
+
 	config.DB.Model(&paylist).Where("username = ?", username).First(&paylist)
 	if tk.Username != paylist.Username {
 		util.CallServerError(c, "user not authorized", nil)

@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,7 +30,7 @@ type user1 struct {
 	Email     string     `json:"email"`
 	Name      string     `json:"name"`
 	Username  string     `json:"username"`
-	Password string `json:"password"`
+	Password  string     `json:"password"`
 	Balance   int        `json:"balance"`
 }
 
@@ -59,7 +60,7 @@ func CreateUser(c *gin.Context) {
 		util.CallServerError(c, "password encryption failed", err)
 		return
 	}
-	
+
 	users.Password = string(password)
 	err = config.DB.Save(&users).Error
 	if err != nil {
@@ -98,7 +99,7 @@ func FetchAllUser(c *gin.Context) {
 			Email:     item.Email,
 			Name:      item.Name,
 			Username:  item.Username,
-			Password: item.Password,
+			Password:  item.Password,
 			Balance:   item.Balance,
 		})
 	}
@@ -126,7 +127,7 @@ func UpdateUser(c *gin.Context) {
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
 		Password: c.PostForm("password"),
-		Balance:  balance,
+		Balance: balance,
 	}
 	config.DB.First(&users, ID)
 
@@ -134,17 +135,43 @@ func UpdateUser(c *gin.Context) {
 		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
 		return
 	}
-
-	if balance == 0 || balance < 0 {
-		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
-		return
-	}
-
 	errf := config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update(&updatedUser).Error
 	if errf != nil {
 		util.CallServerError(c, "Failed to update user", errf)
 	}
 	util.CallSuccessOK(c, "User successfully updated!", ID)
+}
+
+func AddBalance(c *gin.Context) {
+	var users model.User
+	tk := User{}
+	tokenString := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
+	username := tk.Username
+	if err = config.DB.Model(&users).Where("username = ?", username).Find(&users).Error; err != nil || err == gorm.ErrRecordNotFound {
+		util.CallErrorNotFound(c, "no user found", nil)
+		return
+	}
+
+	firstBalance := users.Balance
+	balance, _ := strconv.Atoi(c.PostForm("balance"))
+	if balance == 0 || balance < 0 {
+		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
+		return
+	}
+	er := config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
+	if er != nil {
+		fmt.Println("error apa", err)
+		return
+	}
+	util.CallSuccessOK(c, "successfully add balance", nil)
 }
 
 // DeleteUser function to handle user deletion
@@ -173,7 +200,7 @@ func DeleteUser(c *gin.Context) {
 		util.CallServerError(c, "not authorized", nil)
 		return
 	}
-	util.CallSuccessOK(c, "user delete succcessfully!", nil)
+	util.CallSuccessOK(c, "user delete successfully!", nil)
 }
 
 // FetchSingleUser function to get single user
@@ -255,15 +282,13 @@ func Login(c *gin.Context) {
 	}
 	config.DB.Model(&logging).Find(&logging)
 	if logging.Username == username {
-		// c.JSON(201, gin.H{
-		// 	Name:    "token",
-		// 	Value:   tokenString,})
 		util.CallUserFound(c, "already login", nil)
-		return
 		c.Abort()
+		return
+
 	}
-	if err = config.DB.Model(&logging).Save(&data).Error; err !=nil {
-		util.CallServerError(c,"fail to save logging data",err)
+	if err = config.DB.Model(&logging).Save(&data).Error; err != nil {
+		util.CallServerError(c, "fail to save logging data", err)
 		return
 	}
 
@@ -345,7 +370,7 @@ func Logout(c *gin.Context) {
 	err := config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging).Error
 	if err != nil {
 		fmt.Println(err)
-		util.CallServerError(c,"fail when try to delete the logging", err)
+		util.CallServerError(c, "fail when try to delete the logging", err)
 	}
 	util.CallSuccessOK(c, "logged out", logging.UserStatus)
 }
@@ -359,17 +384,17 @@ func SignOut(c *gin.Context) {
 		return []byte("secret"), nil
 	})
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallServerError(c,"invalid token and expired",nil)
+		util.CallServerError(c, "invalid token and expired", nil)
 		erf := config.DB.Model(&logging).Where("token = ?", tokenString).Update("userStatus", false).Error
-			if erf != nil {
-				fmt.Println(erf)
-			}
+		if erf != nil {
+			fmt.Println(erf)
+		}
 		err := config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
 		if err != nil {
 			fmt.Println(err)
-			util.CallServerError(c,"fail when try to delete the logging", err)
+			util.CallServerError(c, "fail when try to delete the logging", err)
 		}
-		
+
 	}
 	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
 		// util.CallSuccessOK(c,"valid token and not expired", tokenString)
