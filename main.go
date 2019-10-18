@@ -54,7 +54,6 @@ func main() {
 	v1.GET("/users/signout", ep.SignOut, ep.Logout)
 	v1.POST("/user/signin", ep.Login)
 	v1.POST("/user/signup", ep.CreateUser)
-	v1.POST("/user/refresh-token", ep.RefreshToken)
 	v1.POST("/addsaldo", ep.Auth, ep.SignOut, ep.AddBalance)
 	v1.PUT("/user/:id", ep.SignOut, ep.Auth, ep.UpdateUser)
 	v1.DELETE("/user/:id", ep.SignOut, ep.Auth, ep.DeleteUser)
