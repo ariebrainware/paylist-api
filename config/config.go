@@ -19,7 +19,7 @@ type Config struct {
 	User     string
 	Password string
 	Database string
-	Port     string
+	Port     int
 }
 
 var (
@@ -43,9 +43,11 @@ func Conf() {
 		log.Fatal("can't decode config json", err)
 	}
 	log.Println(config.Database)
-	connString := fmt.Sprintf(`user=%s password=%s host=%s port=%s dbname=%s sslmode=disable`, config.User, config.Password, config.Host, config.Port, config.Database)
+	connString := fmt.Sprintf(`user=%s password=%s host=%s port=%d dbname=%s sslmode=disable`, config.User, config.Password, config.Host, config.Port, config.Database)
 	DB, err = gorm.Open("postgres", connString)
+	DB.LogMode(true)
 	if err != nil {
+		fmt.Println(err)
 		panic("failed connect to database")
 	}
 	DB.AutoMigrate(&model.Paylist{}, &model.User{}, &model.Logging{})
