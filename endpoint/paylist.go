@@ -13,6 +13,8 @@ import (
 	"github.com/ariebrainware/paylist-api/util"
 )
 
+var conf config.Config
+
 //User stuct for parse token
 type User struct {
 	Username string
@@ -25,11 +27,11 @@ func FetchAllPaylist(c *gin.Context) {
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, "fail to parse the token, make sure token and signature is valid", err)
 		return
 	}
 	username := tk.Username
@@ -48,7 +50,7 @@ func FetchSinglePaylist(c *gin.Context) {
 	tk := User{}
 	tokenString := c.Request.Header.Get("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -72,7 +74,7 @@ func CreateUserPaylist(c *gin.Context) {
 	// Parse the payload from token
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -114,7 +116,7 @@ func UpdateUserPaylist(c *gin.Context) {
 	// Parse the token payload
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -168,7 +170,7 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	// Parse the token payload and validate the username is own the paylist
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -212,7 +214,7 @@ func DeleteUserPaylist(c *gin.Context) {
 	// Parse the token payload and validate the username is own the paylist
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
