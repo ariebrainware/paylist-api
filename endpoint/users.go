@@ -170,9 +170,9 @@ func AddBalance(c *gin.Context) {
 		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
 		return
 	}
-	er := config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
-	if er != nil {
-		fmt.Println("error apa", err)
+	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	util.CallSuccessOK(c, "successfully add balance", nil)
@@ -306,9 +306,10 @@ func Login(c *gin.Context) {
 
 // Auth function authorization to handle authorized
 func Auth(c *gin.Context) {
+	claim := Token{}
 	logging := &model.Logging{}
 	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
 			return nil, fmt.Errorf("unexpected SigningMethod :%v", token.Header["alg"])
 		}
@@ -318,49 +319,20 @@ func Auth(c *gin.Context) {
 	if logging.Token == "" {
 		util.CallServerError(c, "you have to sign in first", nil)
 		c.Abort()
-		return
-	}
-	if token != nil && err == nil {
-		fmt.Println("token verified")
-		return
-	}
-	result := gin.H{
-		"message": "not authorized",
-	}
-	c.JSON(http.StatusUnauthorized, result)
-	c.Abort()
-}
-
-//RefreshToken hanlde refreshing expired token
-func RefreshToken(c *gin.Context) {
-	claim := Token{}
-	tokenString := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
-		return
+	} else if token != nil && err != nil {
+		util.CallUserError(c, "token expired", err)
+		c.Abort()
 	}
 	if time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	expirationTime := time.Now().Add(12 * time.Hour)
-	claim.ExpiresAt = expirationTime.Unix()
-	tokenn := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-	tknString, err := tokenn.SignedString([]byte("secret"))
+
+	err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
 	if err != nil {
-		c.Writer.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(err)
+		util.CallServerError(c, "fail when try to delete the logging", err)
 		return
 	}
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:    "token",
-		Value:   tknString,
-		Expires: expirationTime,
-	})
-	util.CallSuccessOK(c, "refresh token success", tknString)
 }
 
 //Logout handle logout user
@@ -377,35 +349,4 @@ func Logout(c *gin.Context) {
 		util.CallServerError(c, "fail when try to delete the logging", err)
 	}
 	util.CallSuccessOK(c, "logged out", logging.UserStatus)
-}
-
-//SignOut for check token expired
-func SignOut(c *gin.Context) {
-	claim := Token{}
-	logging := &model.Logging{}
-	tokenString := c.Request.Header.Get("Authorization")
-	token, _ := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
-	})
-	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallServerError(c, "invalid token and expired", nil)
-		erf := config.DB.Model(&logging).Where("token = ?", tokenString).Update("userStatus", false).Error
-		if erf != nil {
-			fmt.Println(erf)
-		}
-		err := config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
-		if err != nil {
-			fmt.Println(err)
-			util.CallServerError(c, "fail when try to delete the logging", err)
-		}
-
-	}
-	if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		// util.CallSuccessOK(c,"valid token and not expired", tokenString)
-		return
-	}
-	c.JSON(http.StatusForbidden, gin.H{
-		"msg": "please sign in again!",
-	})
-	c.Abort()
 }
