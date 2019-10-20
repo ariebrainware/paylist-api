@@ -55,3 +55,23 @@ func CallSuccessOK(c *gin.Context, msg string, data interface{}) {
 		"data":    data,
 	})
 }
+
+// CallUserFound is for return API response with status code 307 means its redirected
+func CallUserFound(c *gin.Context, msg string, data interface{}) {
+	c.JSON(http.StatusTemporaryRedirect, gin.H{
+		"success": false,
+		"error":   "",
+		"msg":     msg,
+		"data":    data,
+	})
+}
+
+// CallUserNotAuthorized is for return API response with status code 403, you need to specify msg, and data as function paramenter
+func CallUserNotAuthorized(c *gin.Context, msg string, data interface{}) {
+	c.JSON(http.StatusUnauthorized, gin.H{
+		"success": false,
+		"error":   "",
+		"msg":     msg,
+		"data":    data,
+	})
+}
