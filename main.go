@@ -44,18 +44,18 @@ func main() {
 	
 	router.GET("/paylist", ep.Auth, ep.FetchAllPaylist)
 	router.GET("/paylist/:id", ep.Auth, ep.FetchSinglePaylist)
-	router.POST("/paylist/", ep.Auth, ep.CreateUserPaylist)
-	router.PUT("/paylist/:id/status", ep.Auth, ep.UpdateUserPaylistStatus)
+	router.POST("/paylist", ep.Auth, ep.CreateUserPaylist)
+	router.PUT("/status/:id", ep.Auth, ep.UpdateUserPaylistStatus)
 	router.PUT("/paylist/:id", ep.Auth, ep.UpdateUserPaylist)
 	router.DELETE("/paylist/:id", ep.Auth, ep.DeleteUserPaylist)
 
 	router.GET("/user/:id", ep.Auth, ep.FetchSingleUser)
 	router.GET("/users", ep.Auth, ep.FetchAllUser)
-	router.GET("/users/signout", ep.SignOut, ep.Logout)
+	router.GET("/users/signout", ep.Logout)
 	router.POST("/user/signin", ep.Login)
 	router.POST("/user/signup", ep.CreateUser)
-	router.POST("/user/refresh-token", ep.RefreshToken)
+	router.POST("/addsaldo", ep.Auth, ep.AddBalance)
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
-	router.Run(":3002")
+	router.Run(":8000")
 }

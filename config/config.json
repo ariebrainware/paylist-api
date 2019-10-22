@@ -1,12 +1,8 @@
 {
-    "Db": {
-        "Host": "localhost",
-        "User": "rob0ne",
-        "Password": "@_L0c4lDB",
-        "Database": "paylist"
-    },
-    "Listen": {
-        "Address": "*",
-        "Port": "3306"
-    }
+    "Host": "localhost",
+    "User": "postgres",
+    "Password": "",
+    "Database": "paylist",
+    "Port": 5432,
+    "JWTSignature": "topsecret"
 }
