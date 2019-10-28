@@ -36,7 +36,6 @@ type user1 struct {
 
 // CreateUser function to sign up
 func CreateUser(c *gin.Context) {
-	//balance, _ := strconv.Atoi(c.PostForm("balance"))
 	users := model.User{
 		Email:    c.PostForm("email"),
 		Name:     c.PostForm("name"),
@@ -74,7 +73,7 @@ func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
@@ -99,7 +98,6 @@ func FetchAllUser(c *gin.Context) {
 			Email:     item.Email,
 			Name:      item.Name,
 			Username:  item.Username,
-			Password:  item.Password,
 			Balance:   item.Balance,
 		})
 	}
@@ -108,11 +106,10 @@ func FetchAllUser(c *gin.Context) {
 
 // UpdateUser function to update user information
 func UpdateUser(c *gin.Context) {
-
 	var users model.User
 	ID := c.Param("id")
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte(fmt.Sprint(conf.JWTSignature)), nil
 	})
@@ -127,31 +124,74 @@ func UpdateUser(c *gin.Context) {
 		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
 		return
 	}
-	updatedUser := model.User{
+	user := model.User{
 		Email:    c.PostForm("email"),
 		Name:     c.PostForm("name"),
 		Username: c.PostForm("username"),
-		Password: c.PostForm("password"),
 		Balance:  balance,
 	}
 	config.DB.First(&users, ID)
-
 	if users.ID == 0 {
 		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
 		return
 	}
-	errf := config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update(&updatedUser).Error
-	if errf != nil {
-		util.CallServerError(c, "Failed to update user", errf)
+	err = config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update(&user).Error
+	if err != nil {
+		util.CallServerError(c, "Failed to update user", err)
+		return
 	}
 	util.CallSuccessOK(c, "User successfully updated!", ID)
+}
+
+func EditPassword(c *gin.Context) {
+	var users model.User
+	ID := c.Param("id")
+	tk := User{}
+	tokenString := c.GetHeader("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
+	})
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		return
+	}
+	username := tk.Username
+
+	OldPassword := c.PostForm("OldPassword")
+	NewPassword := c.PostForm("NewPassword")
+	config.DB.First(&users, ID)
+	if users.ID == 0 {
+		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
+		return
+	}
+
+	errf := bcrypt.CompareHashAndPassword([]byte(users.Password), []byte(OldPassword))
+	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
+		util.CallErrorNotFound(c, "password doesn't match", errf)
+		return
+	}
+
+	//Password Encryption
+	password, err := bcrypt.GenerateFromPassword([]byte(NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		util.CallServerError(c, "password encryption failed", err)
+		return
+	}
+	users.Password = string(password)
+	err = config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update("password", users.Password).Error
+	if err != nil {
+		util.CallServerError(c, "Failed to update user", err)
+		return
+	}
+	util.CallSuccessOK(c, "Password successfully updated!", ID)
 }
 
 // AddBalance is a function to add user balance or income
 func AddBalance(c *gin.Context) {
 	var users model.User
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte(fmt.Sprintf(conf.JWTSignature)), nil
 	})
@@ -185,7 +225,7 @@ func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte(fmt.Sprintf(conf.JWTSignature)), nil
 	})
@@ -195,7 +235,6 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 	username := tk.Username
-
 	config.DB.First(&users, usersID)
 	if users.ID == 0 {
 		util.CallErrorNotFound(c, "user not found", nil)
@@ -214,7 +253,7 @@ func FetchSingleUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
 	tk := User{}
-	tokenString := c.Request.Header.Get("Authorization")
+	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte(fmt.Sprintf(conf.JWTSignature)), nil
 	})
@@ -254,13 +293,11 @@ func Login(c *gin.Context) {
 		util.CallErrorNotFound(c, "please provide username and password", nil)
 		return
 	}
-
 	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
 	if err != nil {
 		util.CallErrorNotFound(c, "wrong username", err)
 		return
 	}
-
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
 		util.CallErrorNotFound(c, "wrong password or password doesn't match", errf)
@@ -291,7 +328,6 @@ func Login(c *gin.Context) {
 		util.CallUserFound(c, "already login", nil)
 		c.Abort()
 		return
-
 	}
 	if err = config.DB.Model(&logging).Save(&data).Error; err != nil {
 		util.CallServerError(c, "fail to save logging data", err)

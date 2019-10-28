@@ -59,7 +59,7 @@ func CallSuccessOK(c *gin.Context, msg string, data interface{}) {
 // CallUserFound is for return API response with status code 307 means its redirected
 func CallUserFound(c *gin.Context, msg string, data interface{}) {
 	c.JSON(http.StatusTemporaryRedirect, gin.H{
-		"success": false,
+		"success": true,
 		"error":   "",
 		"msg":     msg,
 		"data":    data,
