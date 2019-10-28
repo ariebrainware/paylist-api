@@ -36,12 +36,15 @@ func main() {
 		{Method: "PUT", URL: "/user-paylist/:id", Description: "Update User-Paylist by ID"},
 		{Method: "GET", URL: "/user/signout", Description: "Sign Out / Logout"},
 		{Method: "POST", URL: "/users/refresh-token", Description: "Refresh Expired Token"},
+		{Method: "PUT", URL: "/editpassword/:id", Description: "Edit user password"},
+		{Method: "PUT", URL: "/status/:id", Description: "Update user-paylist status"},
+		{Method: "POST", URL: "/addsaldo", Description: "Add User Saldo"},
 	}
 
 	router.GET("/", func(c *gin.Context) {
 		util.CallSuccessOK(c, "Paylist-API available endpoint", listEndpoint)
 	})
-	
+
 	router.GET("/paylist", ep.Auth, ep.FetchAllPaylist)
 	router.GET("/paylist/:id", ep.Auth, ep.FetchSinglePaylist)
 	router.POST("/paylist", ep.Auth, ep.CreateUserPaylist)
