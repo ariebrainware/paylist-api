@@ -56,6 +56,7 @@ func main() {
 	router.POST("/user/signup", ep.CreateUser)
 	router.POST("/addsaldo", ep.Auth, ep.AddBalance)
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
+	router.PUT("/editpassword/:id", ep.Auth, ep.EditPassword)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
 	router.Run(":8000")
 }
