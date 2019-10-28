@@ -1,7 +1,7 @@
 {
     "Host": "localhost",
     "User": "postgres",
-    "Password": "",
+    "Password": "admin123",
     "Database": "paylist",
     "Port": 5432,
     "JWTSignature": "topsecret"
