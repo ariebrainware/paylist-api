@@ -28,6 +28,8 @@ Pay your bill easily!
 | /user/signout         | GET    | Sign out user or logout                               |
 | /user-paylist/:id     | PUT    | Update user-paylist status(complete or not)           |
 | /users/refresh-token  | POST   | Refresh Expired Token                                 |
+| /editpassword/:id     | PUT    | Handling user change password                         |
+| /addsaldo             | POST   | Add User Balance                                      |
 
 
 ## Database Design
