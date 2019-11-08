@@ -357,18 +357,14 @@ func Auth(c *gin.Context) {
 	if logging.Token == "" {
 		util.CallServerError(c, "you have to sign in first", nil)
 		c.Abort()
-	} else if token != nil && err != nil {
+	} else if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
 		util.CallUserError(c, "token expired", err)
+		err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
+		if err != nil {
+			fmt.Println(err)
+			util.CallServerError(c, "fail when try to delete the logging", err)
+		}
 		c.Abort()
-	}
-	if time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		return
-	}
-
-	err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
-	if err != nil {
-		fmt.Println(err)
-		util.CallServerError(c, "fail when try to delete the logging", err)
 		return
 	}
 }
