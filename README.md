@@ -1,5 +1,12 @@
 # PayList-API
 
+[![License](https://img.shields.io/badge/license-MIT-blue?logo=appveyor)](https://github.com/ariebrainware/paylist-api/blob/master/LICENSE)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ariebrainware/paylist-api?color=lightblue)
+![GitHub contributors](https://img.shields.io/github/contributors/ariebrainware/paylist-api?color=yellowgreen)
+![Master last commit](https://img.shields.io/github/last-commit/ariebrainware/paylist/master?label=last-commit%3Amaster)
+![Develop last commit](https://img.shields.io/github/last-commit/ariebrainware/paylist/develop?label=last-commit%3Adevelop)
+![GitHub Release Date](https://img.shields.io/github/release-date/ariebrainware/paylist-api)
+
 Pay your bill easily!
 
 ## Setup 
