@@ -51,6 +51,7 @@ func main() {
 	router.PUT("/status/:id", ep.Auth, ep.UpdateUserPaylistStatus)
 	router.PUT("/paylist/:id", ep.Auth, ep.UpdateUserPaylist)
 	router.DELETE("/paylist/:id", ep.Auth, ep.DeleteUserPaylist)
+	router.GET("/paylist/filter", ep.Auth, ep.FilterPaylist)
 
 	router.GET("/user/:id", ep.Auth, ep.FetchSingleUser)
 	router.GET("/users", ep.Auth, ep.FetchAllUser)

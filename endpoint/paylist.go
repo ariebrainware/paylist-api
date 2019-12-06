@@ -167,7 +167,7 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	user := model.User{}
 	tk := User{}
 
-	// Parse the token payload and validate the username is own the paylist
+	// Extract payload (username) from token
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
 		return []byte(fmt.Sprint(conf.JWTSignature)), nil
@@ -198,6 +198,35 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
 	}
 	util.CallSuccessOK(c, "successfully update user paylist", paylist.Completed)
+}
+
+// FilterPaylist is a function to filter paylist based on month
+func FilterPaylist(c *gin.Context) {
+	param := c.Param("month")
+	if param != "" {
+		util.CallServerError(c, "please specify the filter parameter", nil)
+		return
+	}
+	tk := User{}
+
+	// Extract token payload
+	tokenString := c.GetHeader("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
+	})
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+	}
+	username := tk.Username
+
+	paylist := model.Paylist{}
+	err = config.DB.Model(&paylist).Where("username = ?", username).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(paylist)
 }
 
 //DeleteUserPaylist handle deleted user paylist
