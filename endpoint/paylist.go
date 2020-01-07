@@ -3,6 +3,7 @@ package endpoint
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -84,6 +85,7 @@ func CreateUserPaylist(c *gin.Context) {
 	username := tk.Username
 	// Decrease user balance
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
+	dueDate, _ := time.Parse("2006-01-02", c.PostForm("due_date"))
 	err = config.DB.Model(&users).Where("username  = ?", username).First(&users).Error
 	if err != nil {
 		util.CallErrorNotFound(c, "can't select balance", err)
@@ -95,16 +97,18 @@ func CreateUserPaylist(c *gin.Context) {
 		Name:      c.PostForm("name"),
 		Amount:    amount,
 		Username:  username,
+		DueDate:   dueDate.Format("2006-01-02"),
 		Completed: false,
 	}
 
 	// Save paylist
-	err = config.DB.Model(&paylist).Save(&paylist).Error
+	err = config.DB.Save(&paylist).Error
 	if err != nil {
 		util.CallServerError(c, "fail to create paylist", err)
 		return
 	}
 	util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
+
 }
 
 //UpdateUserPaylist handle status completed in paylists
@@ -137,8 +141,9 @@ func UpdateUserPaylist(c *gin.Context) {
 	firstAmount := paylist.Amount
 	amount, _ := strconv.Atoi(c.PostForm("amount"))
 	updatedPaylist := model.Paylist{
-		Name:   c.PostForm("name"),
-		Amount: amount,
+		Name:    c.PostForm("name"),
+		Amount:  amount,
+		DueDate: c.PostForm("due_date"),
 	}
 	if tk.Username != paylist.Username {
 		util.CallServerError(c, "not authorized", nil)
@@ -255,4 +260,35 @@ func DeleteUserPaylist(c *gin.Context) {
 		util.CallServerError(c, "paylist fail to delete", err)
 	}
 	util.CallSuccessOK(c, "paylist successfully deleted!", nil)
+}
+
+// FilterPaylist is a function to filter paylist based on month
+func FilterPaylist(c *gin.Context) {
+	paylist := model.Paylist{}
+	//param,_ := strconv.ParseInt(c.Param("month"),10,64)
+	//month := paylist.CreatedAt.Month()
+	param:= c.Param("created_at")
+	if param != "" {
+		util.CallServerError(c, "please specify the filter parameter", nil)
+		return
+	}
+	tk := User{}
+
+	// Extract token payload
+	tokenString := c.GetHeader("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte(fmt.Sprint(conf.JWTSignature)), nil
+	})
+	if err != nil || token == nil {
+		fmt.Println(err, token)
+		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+	}
+	username := tk.Username
+
+	err = config.DB.Model(&paylist).Where("username = ? and MONTH(created_at) = ?", username, param).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	util.CallSuccessOK(c, "success paylist", paylist)
 }
