@@ -9,7 +9,7 @@
 
 Pay your bill easily!
 
-## Setup 
+## Setup
 
 1. Install golang and setup `$GOPATH`. Download in [here](https://golang.org/dl/) and Installation instruction can be found in [here](https://golang.org/doc/install)
 2. `go get -u github.com/ariebrainware/paylist-api`
@@ -38,7 +38,6 @@ Pay your bill easily!
 | /editpassword/:id     | PUT    | Handling user change password                         |
 | /addsaldo             | POST   | Add User Balance                                      |
 
-
 ## Database Design
 
 Use GORM
@@ -65,7 +64,7 @@ status               Dump the migration status for the current DB
 create NAME [sql|go] Creates new migration file with the current timestamp
 ```
 
-```
+```go
 Paylists Table
 +------------+------------------+------+-----+---------+----------------+
 | Field      | Type             | Null | Key | Default | Extra          |
@@ -76,12 +75,13 @@ Paylists Table
 | deleted_at | timestamp        | YES  | MUL | NULL    |                |
 | name       | varchar(255)     | YES  |     | NULL    |                |
 | amount     | int(11)          | YES  |     | NULL    |                |
+| due_date   | date             | YES  |     | NULL    |                |
 | username   | varchar(255)     | YES  |     | NULL    |                |
 | completed  | tinyint(1)       | YES  |     | NULL    |                |
 +------------+------------------+------+-----+---------+----------------+
 ```
 
-```
+```go
 Users Table
 +------------+------------------+------+-----+---------+----------------+
 | Field      | Type             | Null | Key | Default | Extra          |
@@ -98,7 +98,7 @@ Users Table
 +------------+------------------+------+-----+---------+----------------+
 ```
 
-```
+```go
 Loggings Table
 +------------+------------------+------+-----+---------+----------------+
 | Field      | Type             | Null | Key | Default | Extra          |
