@@ -61,5 +61,9 @@ func main() {
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
 	router.PUT("/editpassword/:id", ep.Auth, ep.EditPassword)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
+
+	router.GET("/income", ep.Auth, ep.FetchAllIncome)
+	router.PUT("/income/:id",ep.Auth, ep.UpdateIncome)
+	router.DELETE("/income/:id", ep.Auth, ep.DeleteIncome)
 	router.Run(":8000")
 }

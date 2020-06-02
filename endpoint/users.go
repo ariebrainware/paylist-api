@@ -190,6 +190,7 @@ func EditPassword(c *gin.Context) {
 // AddBalance is a function to add user balance or income
 func AddBalance(c *gin.Context) {
 	var users model.User
+	var inc model.Income
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
@@ -215,6 +216,15 @@ func AddBalance(c *gin.Context) {
 	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
 	if err != nil {
 		fmt.Println(err)
+		return
+	}
+	data := model.Income{
+		Username: username,
+		Income : balance,
+	}
+	err = config.DB.Model(&inc).Save(&data).Error
+	if err != nil {
+		fmt.Println("error",err)
 		return
 	}
 	util.CallSuccessOK(c, "successfully add balance", nil)
