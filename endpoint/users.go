@@ -220,11 +220,11 @@ func AddBalance(c *gin.Context) {
 	}
 	data := model.Income{
 		Username: username,
-		Income : balance,
+		Income:   balance,
 	}
 	err = config.DB.Model(&inc).Save(&data).Error
 	if err != nil {
-		fmt.Println("error",err)
+		fmt.Println("error", err)
 		return
 	}
 	util.CallSuccessOK(c, "successfully add balance", nil)

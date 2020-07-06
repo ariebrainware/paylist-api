@@ -267,7 +267,7 @@ func FilterPaylist(c *gin.Context) {
 	paylist := model.Paylist{}
 	//param,_ := strconv.ParseInt(c.Param("month"),10,64)
 	//month := paylist.CreatedAt.Month()
-	param:= c.Param("created_at")
+	param := c.Param("created_at")
 	if param != "" {
 		util.CallServerError(c, "please specify the filter parameter", nil)
 		return

@@ -9,6 +9,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+
 	//"golang.org/x/crypto/bcrypt"
 
 	"github.com/ariebrainware/paylist-api/config"
@@ -18,14 +19,15 @@ import (
 
 // Token is a struct for token model
 
-type Income struct{
-	ID uint
+type Income struct {
+	ID        uint
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
-	Username string
-	Income int
+	Username  string
+	Income    int
 }
+
 func FetchAllIncome(c *gin.Context) {
 	var income []model.Income
 	var inc []Income
@@ -53,7 +55,7 @@ func FetchAllIncome(c *gin.Context) {
 			UpdatedAt: item.UpdatedAt,
 			DeletedAt: item.DeletedAt,
 			Username:  item.Username,
-			Income: item.Income,
+			Income:    item.Income,
 		})
 	}
 	util.CallSuccessOK(c, "Fetch All Income Data ", inc)
@@ -86,13 +88,13 @@ func UpdateIncome(c *gin.Context) {
 		util.CallErrorNotFound(c, "no income found", nil)
 		return
 	}
-	fmt.Println("inc",income.Income)
+	fmt.Println("inc", income.Income)
 	firstIncome := income.Income
 	inc, _ := strconv.Atoi(c.PostForm("income"))
 	updatedIncome := model.Income{
 		Income: inc,
 	}
-	if tk.Username != income.Username{
+	if tk.Username != income.Username {
 		util.CallServerError(c, "not authorized", nil)
 		return
 	}
@@ -134,7 +136,7 @@ func DeleteIncome(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	config.DB.Model(&inc).Select("income").Where("username = ? and ID = ? ", username,ID).Find(&inc)
+	config.DB.Model(&inc).Select("income").Where("username = ? and ID = ? ", username, ID).Find(&inc)
 	if inc.ID == 0 {
 		util.CallErrorNotFound(c, "can't select income", nil)
 		return
@@ -149,7 +151,7 @@ func DeleteIncome(c *gin.Context) {
 	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", users.Balance-income).Error
 	if err != nil {
 		fmt.Println(err)
-		util.CallServerError(c, "failed update income",nil)
+		util.CallServerError(c, "failed update income", nil)
 		return
 	}
 	config.DB.Model(&inc).Where("username = ?", username).Delete(&inc)
