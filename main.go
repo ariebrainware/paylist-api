@@ -22,7 +22,7 @@ func main() {
 	configFile := flag.String("config", "config/dev.json", "Config file path")
 	flag.Parse()
 	if configFile == nil || *configFile == "" {
-		return false
+		return
 	}
 	config.LoadConfiguration(*configFile)
 
@@ -70,5 +70,5 @@ func main() {
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
 	router.PUT("/editpassword/:id", ep.Auth, ep.EditPassword)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
-	router.Run(fmt.Sprintf("%d", config.Conf.Port))
+	router.Run(fmt.Sprintf("%d", config.Misc.Port))
 }
