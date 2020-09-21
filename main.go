@@ -19,7 +19,7 @@ type endpoint struct {
 }
 
 func main() {
-	configFile := flag.String("config", "config/dev.json", "Config file path")
+	configFile := flag.String("config", "config/config.json", "Config file path")
 	flag.Parse()
 	if configFile == nil || *configFile == "" {
 		return
@@ -70,5 +70,9 @@ func main() {
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
 	router.PUT("/editpassword/:id", ep.Auth, ep.EditPassword)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
-	router.Run(fmt.Sprintf("%d", config.Misc.Port))
+	err := router.Run(fmt.Sprintf(":%d", config.Misc.Port))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
