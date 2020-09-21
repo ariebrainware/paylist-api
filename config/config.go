@@ -9,22 +9,24 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/tkanos/gonfig"
 
 	"github.com/ariebrainware/paylist-api/model"
 )
 
-// Config is a configuration model
-type Config struct {
+// Configuration is a configuration model
+type Configuration struct {
 	Host         string
 	User         string
 	Password     string
 	Database     string
-	Port         int
+	DBPort       int
 	JWTSignature string
+	Port         int
 }
 
 var (
-	config Config
+	config Configuration
 	// DB is a exported connection
 	DB *gorm.DB
 )
@@ -44,13 +46,25 @@ func Conf() {
 		log.Fatal("can't decode config json", err)
 	}
 	log.Println(config.Database)
-	connString := fmt.Sprintf(`user=%s password=%s host=%s port=%d dbname=%s sslmode=disable`, config.User, config.Password, config.Host, config.Port, config.Database)
+	connString := fmt.Sprintf(`user=%s password=%s host=%s port=%d dbname=%s sslmode=disable`, config.User, config.Password, config.Host, config.DBPort, config.Database)
 	DB, err = gorm.Open("postgres", connString)
 	DB.LogMode(true)
 	if err != nil {
 		fmt.Println(err)
-		panic("failed connect to database")
+		// panic("failed connect to database")
 	}
 	DB.AutoMigrate(&model.Paylist{}, &model.User{}, &model.Logging{})
 	fmt.Println("Schema migrated!!")
+}
+
+// Misc is a global variable to handle exported configuration
+var Misc Configuration
+
+// LoadConfiguration is a function to export value from config.json based on defined struct
+func LoadConfiguration(path string) {
+	Misc = Configuration{}
+	err := gonfig.GetConf(path, &Misc)
+	if err != nil {
+		panic(err)
+	}
 }

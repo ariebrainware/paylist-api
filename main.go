@@ -1,6 +1,9 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -16,7 +19,13 @@ type endpoint struct {
 }
 
 func main() {
-	config.Conf()
+	configFile := flag.String("config", "config/dev.json", "Config file path")
+	flag.Parse()
+	if configFile == nil || *configFile == "" {
+		return false
+	}
+	config.LoadConfiguration(*configFile)
+
 	router := gin.Default()
 	router.Use(cors.Default())
 	listEndpoint := []endpoint{
@@ -61,5 +70,5 @@ func main() {
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
 	router.PUT("/editpassword/:id", ep.Auth, ep.EditPassword)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
-	router.Run(":8000")
+	router.Run(fmt.Sprintf("%d", config.Conf.Port))
 }

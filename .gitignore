@@ -1,3 +1,4 @@
-gin-bin
 archieve-bin/
-*.idea
+notes/
+.vscode/
+gin-bin
