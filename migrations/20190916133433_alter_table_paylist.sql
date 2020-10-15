@@ -1,8 +1,4 @@
--- -- +goose Up
--- -- +goose StatementBegin
+-- +goose Up
 ALTER TABLE Paylists ADD FOREIGN KEY(username) REFERENCES Users(username);
--- -- +goose StatementEnd
--- -- +goose Down
--- -- +goose StatementBegin
+-- +goose Down
 ALTER TABLE Paylists DROP FOREIGN KEY(username);
--- -- +goose StatementEnd
