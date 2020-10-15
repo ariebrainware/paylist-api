@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -16,7 +18,7 @@ type endpoint struct {
 }
 
 func main() {
-	config.Conf()
+	config.LoadConfiguration()
 	router := gin.Default()
 	router.Use(cors.Default())
 	listEndpoint := []endpoint{
@@ -63,7 +65,7 @@ func main() {
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
 
 	router.GET("/income", ep.Auth, ep.FetchAllIncome)
-	router.PUT("/income/:id",ep.Auth, ep.UpdateIncome)
+	router.PUT("/income/:id", ep.Auth, ep.UpdateIncome)
 	router.DELETE("/income/:id", ep.Auth, ep.DeleteIncome)
-	router.Run(":8000")
+	router.Run(fmt.Sprintf(":%d", config.Conf.Port))
 }

@@ -2,15 +2,12 @@ package endpoint
 
 import (
 	"fmt"
-	//"net/http"
 	"strconv"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-
-	//"golang.org/x/crypto/bcrypt"
 
 	"github.com/ariebrainware/paylist-api/config"
 	"github.com/ariebrainware/paylist-api/model"
@@ -34,7 +31,7 @@ func FetchAllIncome(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(conf.JWTSignature)), nil
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -70,7 +67,7 @@ func UpdateIncome(c *gin.Context) {
 	// Parse the token payload
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(conf.JWTSignature)), nil
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -123,7 +120,7 @@ func DeleteIncome(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(conf.JWTSignature)), nil
+		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
