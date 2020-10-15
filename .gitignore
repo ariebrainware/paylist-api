@@ -1,3 +1,5 @@
+archieve/
+.vscode/
 gin-bin
-archieve-bin/
 *.idea
+.env

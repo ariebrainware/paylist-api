@@ -9,28 +9,29 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-
-	"github.com/ariebrainware/paylist-api/model"
 )
 
-// Config is a configuration model
-type Config struct {
-	Host         string
-	User         string
-	Password     string
-	Database     string
-	Port         int
-	JWTSignature string
+// Configuration is a configuration model
+type Configuration struct {
+	Port int `json:"port"`
+
+	Host         string `json:"host"`
+	User         string `json:"user"`
+	Database     string `json:"database"`
+	DBPort       int    `json:"dbPort"`
+	JWTSignature string `json:"jwtSignature"`
 }
 
+const password = "DB_PASSWORD"
+
 var (
-	config Config
+	Conf Configuration
 	// DB is a exported connection
 	DB *gorm.DB
 )
 
-// Conf Database configuration using json file
-func Conf() {
+// LoadConfiguration Database configuration using json file
+func LoadConfiguration() {
 	c := flag.String("c", "config/config.json", "Specify the file configuration.")
 	flag.Parse()
 	file, err := os.Open(*c)
@@ -39,18 +40,15 @@ func Conf() {
 	}
 	defer file.Close()
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
+	err = decoder.Decode(&Conf)
 	if err != nil {
 		log.Fatal("can't decode config json", err)
 	}
-	log.Println(config.Database)
-	connString := fmt.Sprintf(`user=%s password=%s host=%s port=%d dbname=%s sslmode=disable`, config.User, config.Password, config.Host, config.Port, config.Database)
+	connString := fmt.Sprintf(`user=%s password=%s host=%s port=%d dbname=%s sslmode=disable`, Conf.User, os.Getenv(password), Conf.Host, Conf.DBPort, Conf.Database)
 	DB, err = gorm.Open("postgres", connString)
 	DB.LogMode(true)
 	if err != nil {
 		fmt.Println(err)
 		panic("failed connect to database")
 	}
-	DB.AutoMigrate(&model.Paylist{}, &model.User{}, &model.Logging{})
-	fmt.Println("Schema migrated!!")
 }
