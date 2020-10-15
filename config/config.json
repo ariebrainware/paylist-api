@@ -1,9 +1,8 @@
 {
-    "Port": 3003,
-    "Host": "localhost",
-    "User": "postgres",
-    "Password": "admin123",
-    "Database": "paylist",
-    "DBPort": 5432,
-    "JWTSignature": "topsecret"
+    "port":3003,
+    "host": "localhost",
+    "user": "postgres",
+    "database": "paylist",
+    "dbPort": 5432,
+    "jwtSignature": "topsecret"
 }

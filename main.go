@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/gin-contrib/cors"
@@ -19,13 +18,7 @@ type endpoint struct {
 }
 
 func main() {
-	configFile := flag.String("config", "config/config.json", "Config file path")
-	flag.Parse()
-	if configFile == nil || *configFile == "" {
-		return
-	}
-	config.LoadConfiguration(*configFile)
-
+	config.LoadConfiguration()
 	router := gin.Default()
 	router.Use(cors.Default())
 	listEndpoint := []endpoint{
@@ -70,7 +63,10 @@ func main() {
 	router.PUT("/user/:id", ep.Auth, ep.UpdateUser)
 	router.PUT("/editpassword/:id", ep.Auth, ep.EditPassword)
 	router.DELETE("/user/:id", ep.Auth, ep.DeleteUser)
-	err := router.Run(fmt.Sprintf(":%d", config.Misc.Port))
+	router.GET("/income", ep.Auth, ep.FetchAllIncome)
+	router.PUT("/income/:id", ep.Auth, ep.UpdateIncome)
+	router.DELETE("/income/:id", ep.Auth, ep.DeleteIncome)
+	err := router.Run(fmt.Sprintf(":%d", config.Conf.Port))
 	if err != nil {
 		fmt.Println(err)
 		return

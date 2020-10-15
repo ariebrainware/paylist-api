@@ -75,7 +75,7 @@ func FetchAllUser(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -111,7 +111,7 @@ func UpdateUser(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -149,7 +149,7 @@ func EditPassword(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -190,10 +190,11 @@ func EditPassword(c *gin.Context) {
 // AddBalance is a function to add user balance or income
 func AddBalance(c *gin.Context) {
 	var users model.User
+	var inc model.Income
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -217,6 +218,15 @@ func AddBalance(c *gin.Context) {
 		fmt.Println(err)
 		return
 	}
+	data := model.Income{
+		Username: username,
+		Income:   balance,
+	}
+	err = config.DB.Model(&inc).Save(&data).Error
+	if err != nil {
+		fmt.Println("error", err)
+		return
+	}
 	util.CallSuccessOK(c, "successfully add balance", nil)
 }
 
@@ -227,7 +237,7 @@ func DeleteUser(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -255,7 +265,7 @@ func FetchSingleUser(c *gin.Context) {
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
@@ -313,7 +323,7 @@ func Login(c *gin.Context) {
 	}
 	//Create JWT token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenString, err := token.SignedString([]byte(fmt.Sprintf(config.Misc.JWTSignature)))
+	tokenString, err := token.SignedString([]byte(fmt.Sprintf(config.Conf.JWTSignature)))
 	if err != nil {
 		util.CallServerError(c, "error create token", err)
 		c.Abort()
@@ -351,7 +361,7 @@ func Auth(c *gin.Context) {
 		if jwt.GetSigningMethod("HS256") != token.Method {
 			return nil, fmt.Errorf("unexpected SigningMethod :%v", token.Header["alg"])
 		}
-		return []byte(fmt.Sprintf(config.Misc.JWTSignature)), nil
+		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
 	})
 	config.DB.Model(&logging).Where("token = ? ", tokenString).Find(&logging)
 	if logging.Token == "" {
@@ -381,6 +391,8 @@ func Logout(c *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 		util.CallServerError(c, "fail when try to delete the logging", err)
+		return
 	}
 	util.CallSuccessOK(c, "logged out", logging.UserStatus)
+	return
 }

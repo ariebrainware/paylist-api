@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"testing"
 	"net/http/httptest"
-	"github.com/gin-gonic/gin"	
+	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 // fun TestFetchSingleUser Functional Testing for FetchSingleUser
@@ -16,10 +17,10 @@ func TestFetchSingleUser(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-    router := gin.Default()
-    router.GET("/users/:id", FetchSingleUser)
-    resp := httptest.NewRecorder()
-    router.ServeHTTP(resp, req)
+	router := gin.Default()
+	router.GET("/users/:id", FetchSingleUser)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -33,10 +34,10 @@ func TestFetchAllUser(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-    router := gin.Default()
-    router.GET("/users", FetchAllUser)
-    resp := httptest.NewRecorder()
-    router.ServeHTTP(resp, req)
+	router := gin.Default()
+	router.GET("/users", FetchAllUser)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
 	if status := resp.Code; status != http.StatusOK {
 		t.Errorf("router returned wrong status code: got %v want %v",
 			status, http.StatusOK)

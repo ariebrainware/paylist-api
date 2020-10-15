@@ -10,5 +10,6 @@ type Paylist struct {
 	Name      string `json:"name"`
 	Amount    int    `json:"amount"`
 	Username  string `json:"username"`
+	DueDate   string `gorm:"default:null"`
 	Completed bool   `json:"completed"`
 }
