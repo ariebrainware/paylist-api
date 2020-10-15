@@ -66,8 +66,7 @@ func main() {
 	router.GET("/income", ep.Auth, ep.FetchAllIncome)
 	router.PUT("/income/:id", ep.Auth, ep.UpdateIncome)
 	router.DELETE("/income/:id", ep.Auth, ep.DeleteIncome)
-	router.Run(fmt.Sprintf(":%d", config.Conf.Port))
-	err := router.Run(fmt.Sprintf(":%d", config.Misc.Port))
+	err := router.Run(fmt.Sprintf(":%d", config.Conf.Port))
 	if err != nil {
 		fmt.Println(err)
 		return

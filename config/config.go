@@ -9,7 +9,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/tkanos/gonfig"
 )
 
 // Configuration is a configuration model
@@ -51,17 +50,5 @@ func LoadConfiguration() {
 	if err != nil {
 		fmt.Println(err)
 		// panic("failed connect to database")
-	}
-}
-
-// Misc is a global variable to handle exported configuration
-var Misc Configuration
-
-// LoadConfiguration is a function to export value from config.json based on defined struct
-func LoadConfiguration(path string) {
-	Misc = Configuration{}
-	err := gonfig.GetConf(path, &Misc)
-	if err != nil {
-		panic(err)
 	}
 }
