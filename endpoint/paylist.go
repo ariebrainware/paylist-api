@@ -196,9 +196,12 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	if user.Balance >= 0 && paylist.Completed == false {
 		paylist.Completed = true
 		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
-	} else if user.Balance < 0 && paylist.Completed == false {
+	} else if user.Balance >= 0 && paylist.Completed == true {
 		paylist.Completed = false
 		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
+	} else {
+		util.CallUserError(c, "fail to update paylist status", fmt.Errorf("make sure your balance is sufficient"))
+		return
 	}
 	util.CallSuccessOK(c, "successfully update user paylist", paylist.Completed)
 }
@@ -214,6 +217,7 @@ func DeleteUserPaylist(c *gin.Context) {
 		util.CallUserError(c, "please specify paylist id", nil)
 		return
 	}
+
 	// Parse the token payload and validate the username is own the paylist
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {

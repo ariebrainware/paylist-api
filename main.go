@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -19,6 +21,13 @@ type endpoint struct {
 
 func main() {
 	config.LoadConfiguration()
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn: "https://0d01b76a59934b6887a0323eed450b0f@o326252.ingest.sentry.io/5553941",
+	})
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
+
 	router := gin.Default()
 	router.Use(cors.Default())
 	listEndpoint := []endpoint{
@@ -66,8 +75,9 @@ func main() {
 	router.GET("/income", ep.Auth, ep.FetchAllIncome)
 	router.PUT("/income/:id", ep.Auth, ep.UpdateIncome)
 	router.DELETE("/income/:id", ep.Auth, ep.DeleteIncome)
-	err := router.Run(fmt.Sprintf(":%d", config.Conf.Port))
+	err = router.Run(fmt.Sprintf(":%d", config.Conf.Port))
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println(err)
 		return
 	}
