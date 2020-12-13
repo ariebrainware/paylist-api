@@ -7,6 +7,7 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -190,7 +191,7 @@ func EditPassword(c *gin.Context) {
 // AddBalance is a function to add user balance or income
 func AddBalance(c *gin.Context) {
 	var users model.User
-	var inc model.Income
+	var inc model.Incomes
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
 	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
@@ -218,13 +219,14 @@ func AddBalance(c *gin.Context) {
 		fmt.Println(err)
 		return
 	}
-	data := model.Income{
+	data := model.Incomes{
 		Username: username,
-		Income:   balance,
+		Balance:  balance,
 	}
 	err = config.DB.Model(&inc).Save(&data).Error
 	if err != nil {
 		fmt.Println("error", err)
+		sentry.CaptureException(err)
 		return
 	}
 	util.CallSuccessOK(c, "successfully add balance", nil)

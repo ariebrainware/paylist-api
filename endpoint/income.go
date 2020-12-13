@@ -26,7 +26,7 @@ type Income struct {
 }
 
 func FetchAllIncome(c *gin.Context) {
-	var income []model.Income
+	var income []model.Incomes
 	var inc []Income
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
@@ -52,7 +52,7 @@ func FetchAllIncome(c *gin.Context) {
 			UpdatedAt: item.UpdatedAt,
 			DeletedAt: item.DeletedAt,
 			Username:  item.Username,
-			Income:    item.Income,
+			Income:    item.Balance,
 		})
 	}
 	util.CallSuccessOK(c, "Fetch All Income Data ", inc)
@@ -60,7 +60,7 @@ func FetchAllIncome(c *gin.Context) {
 
 //Update Func to handle edit income when user wrong input the income
 func UpdateIncome(c *gin.Context) {
-	income := model.Income{}
+	income := model.Incomes{}
 	user := model.User{}
 	tk := User{}
 
@@ -85,11 +85,11 @@ func UpdateIncome(c *gin.Context) {
 		util.CallErrorNotFound(c, "no income found", nil)
 		return
 	}
-	fmt.Println("inc", income.Income)
-	firstIncome := income.Income
+	fmt.Println("inc", income.Balance)
+	firstIncome := income.Balance
 	inc, _ := strconv.Atoi(c.PostForm("income"))
-	updatedIncome := model.Income{
-		Income: inc,
+	updatedIncome := model.Incomes{
+		Balance: inc,
 	}
 	if tk.Username != income.Username {
 		util.CallServerError(c, "not authorized", nil)
@@ -115,7 +115,7 @@ func UpdateIncome(c *gin.Context) {
 //func DeleteIncome handle delete income
 func DeleteIncome(c *gin.Context) {
 	var users model.User
-	var inc model.Income
+	var inc model.Incomes
 	ID := c.Param("id")
 	tk := User{}
 	tokenString := c.GetHeader("Authorization")
@@ -143,9 +143,9 @@ func DeleteIncome(c *gin.Context) {
 		util.CallErrorNotFound(c, "can't select income", nil)
 		return
 	}
-	income := inc.Income
-	fmt.Println("inc", inc.Income)
-	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", users.Balance-income).Error
+	balance := inc.Balance
+	fmt.Println("inc", inc.Balance)
+	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", users.Balance-balance).Error
 	if err != nil {
 		fmt.Println(err)
 		util.CallServerError(c, "failed update income", nil)
