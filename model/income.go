@@ -13,3 +13,7 @@ type Income struct {
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
 }
+
+func (Income) TableName() string {
+	return "incomes"
+}

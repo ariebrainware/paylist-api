@@ -13,3 +13,7 @@ type User struct {
 	Password string `json:"password"`
 	Balance  int    `json:"balance"`
 }
+
+func (User) TableName() string {
+	return "users"
+}

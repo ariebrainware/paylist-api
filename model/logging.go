@@ -8,7 +8,11 @@ import (
 type Logging struct {
 	Username   string `sql:"column:username" json:"username"`
 	Token      string `sql:"column:token" json:"token"`
-	UserStatus bool   `sql:"column:userStatus"`
+	UserStatus bool   `sql:"column:user_status"`
 	CreatedAt  time.Time
 	DeletedAt  *time.Time
+}
+
+func (Logging) TableName() string {
+	return "loggings"
 }

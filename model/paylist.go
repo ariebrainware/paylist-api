@@ -13,3 +13,7 @@ type Paylist struct {
 	DueDate   string `gorm:"default:null"`
 	Completed bool   `json:"completed"`
 }
+
+func (Paylist) TableName() string {
+	return "paylists"
+}

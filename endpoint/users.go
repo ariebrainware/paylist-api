@@ -379,7 +379,7 @@ func Auth(c *gin.Context) {
 	}
 }
 
-//Logout handle logout user
+// Logout handle logout user
 func Logout(c *gin.Context) {
 	logging := &model.Logging{}
 	tokenStr := c.GetHeader("Authorization")

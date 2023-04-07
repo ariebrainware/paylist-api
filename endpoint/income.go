@@ -58,7 +58,7 @@ func FetchAllIncome(c *gin.Context) {
 	util.CallSuccessOK(c, "Fetch All Income Data ", inc)
 }
 
-//Update Func to handle edit income when user wrong input the income
+// Update Func to handle edit income when user wrong input the income
 func UpdateIncome(c *gin.Context) {
 	income := model.Income{}
 	user := model.User{}
@@ -112,7 +112,7 @@ func UpdateIncome(c *gin.Context) {
 	util.CallSuccessOK(c, "income successfully updated!", income)
 }
 
-//func DeleteIncome handle delete income
+// func DeleteIncome handle delete income
 func DeleteIncome(c *gin.Context) {
 	var users model.User
 	var inc model.Income
