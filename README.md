@@ -53,7 +53,7 @@ goose create add_some_column sql
 
 Usage: goose [OPTIONS] DRIVER DBSTRING COMMAND
 ```
-goose mysql "user:password@/dbname?parseTime=true" status
+goose postgres "host=localhost user=postgres password='' dbname=postgres sslmode=disable" status
 ```
 
 Commands:
