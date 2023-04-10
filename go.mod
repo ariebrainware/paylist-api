@@ -1,9 +1,8 @@
-module github.com/ariebrainware/paylist-compose/paylist-api
+module github.com/ariebrainware/paylist-api
 
 go 1.20
 
 require (
-	github.com/ariebrainware/paylist-api v1.1.5
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.0
