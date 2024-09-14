@@ -1,8 +1,0 @@
-{
-    "port": 3003,
-    "host": "ritalinserver.ddns.net",
-    "user": "paylist_backend",
-    "database": "paylist",
-    "dbPort": 5432,
-    "jwtSignature": "topsecret"
-}
