@@ -1,0 +1,8 @@
+{
+    "port": 3003,
+    "host": "dbhost",
+    "user": "dbuser",
+    "database": "dbname",
+    "dbPort": 5432,
+    "jwtSignature": "topsecret"
+}

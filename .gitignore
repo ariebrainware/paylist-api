@@ -3,3 +3,4 @@ archieve/
 gin-bin
 *.idea
 .env
+config/config.json
