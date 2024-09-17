@@ -35,7 +35,10 @@ func FetchAllIncome(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure token is valid",
+			Err: err,
+		})
 		return
 	}
 	username := tk.Username
