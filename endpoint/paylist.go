@@ -14,13 +14,13 @@ import (
 	"github.com/ariebrainware/paylist-api/util"
 )
 
-//User stuct for parse token
+// User stuct for parse token
 type User struct {
 	Username string
 	jwt.StandardClaims
 }
 
-//FetchAllPaylist Fetch All Paylist
+// FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
 	tk := User{}
@@ -42,7 +42,7 @@ func FetchAllPaylist(c *gin.Context) {
 	util.CallSuccessOK(c, "fetched all paylist", paylist)
 }
 
-//FetchSinglePaylist fetch a single paylist
+// FetchSinglePaylist fetch a single paylist
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
@@ -109,7 +109,7 @@ func CreateUserPaylist(c *gin.Context) {
 
 }
 
-//UpdateUserPaylist handle status completed in paylists
+// UpdateUserPaylist handle status completed in paylists
 func UpdateUserPaylist(c *gin.Context) {
 	paylist := model.Paylist{}
 	user := model.User{}
@@ -203,7 +203,7 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	util.CallSuccessOK(c, "successfully update user paylist", paylist.Completed)
 }
 
-//DeleteUserPaylist handle deleted user paylist
+// DeleteUserPaylist handle deleted user paylist
 func DeleteUserPaylist(c *gin.Context) {
 	paylistID, _ := strconv.Atoi(c.Param("id"))
 	paylist := &model.Paylist{}

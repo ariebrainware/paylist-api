@@ -64,6 +64,7 @@ func CreateUser(c *gin.Context) {
 	err = config.DB.Save(&users).Error
 	if err != nil {
 		util.CallServerError(c, "Failed Create User!", err)
+		return
 	}
 	util.CallSuccessOK(c, "User created Successfully!", users.ID)
 }
