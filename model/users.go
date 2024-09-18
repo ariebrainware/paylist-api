@@ -4,7 +4,9 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// User is a model for user table
+// User represents a user in the system with their associated details.
+// It includes fields for email, name, username, password, and balance.
+// The Username field is marked as the primary key and cannot be null.
 type User struct {
 	gorm.Model
 	Email    string `json:"email"`
