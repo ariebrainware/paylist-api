@@ -20,7 +20,6 @@ type User struct {
 	jwt.StandardClaims
 }
 
-// FetchAllPaylist Fetch All Paylist
 func FetchAllPaylist(c *gin.Context) {
 	var paylist []model.Paylist
 	tk := User{}
@@ -30,19 +29,27 @@ func FetchAllPaylist(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token and signature is valid", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure token and signature is valid",
+			Err: err,
+		})
 		return
 	}
 	username := tk.Username
 	errf := config.DB.Model(&paylist).Where("username = ?", username).Find(&paylist).Error
 	if errf != nil {
-		util.CallErrorNotFound(c, "no paylist found!", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "no paylist found!",
+			Err: errf,
+		})
 		return
 	}
-	util.CallSuccessOK(c, "fetched all paylist", paylist)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "fetched all paylist",
+		Data: paylist,
+	})
 }
 
-// FetchSinglePaylist fetch a single paylist
 func FetchSinglePaylist(c *gin.Context) {
 	var paylist model.Paylist
 	paylistID := c.Param("id")
@@ -53,19 +60,27 @@ func FetchSinglePaylist(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure token is valid",
+			Err: err,
+		})
 		return
 	}
 	username := tk.Username
 	errf := config.DB.Model(&model.Paylist{}).Where("ID = ? and username = ?", paylistID, username).Find(&paylist).Error
 	if errf != nil {
-		util.CallErrorNotFound(c, "no paylist found!", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "no paylist found!",
+			Err: errf,
+		})
 		return
 	}
-	util.CallSuccessOK(c, "success fetch single paylist", paylist)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "success fetch single paylist",
+		Data: paylist,
+	})
 }
 
-// CreateUserPaylist function to create new paylist
 func CreateUserPaylist(c *gin.Context) {
 	users := model.User{}
 	tk := User{}
@@ -77,7 +92,10 @@ func CreateUserPaylist(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure token is valid",
+			Err: err,
+		})
 		return
 	}
 	username := tk.Username
@@ -86,7 +104,10 @@ func CreateUserPaylist(c *gin.Context) {
 	dueDate, _ := time.Parse("2006-01-02", c.PostForm("due_date"))
 	err = config.DB.Model(&users).Where("username  = ?", username).First(&users).Error
 	if err != nil {
-		util.CallErrorNotFound(c, "can't select balance", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "can't select balance",
+			Err: err,
+		})
 		return
 	}
 	finalAmount := users.Balance - amount
@@ -102,14 +123,19 @@ func CreateUserPaylist(c *gin.Context) {
 	// Save paylist
 	err = config.DB.Save(&paylist).Error
 	if err != nil {
-		util.CallServerError(c, "fail to create paylist", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "fail to create paylist",
+			Err: err,
+		})
 		return
 	}
-	util.CallSuccessOK(c, "paylist item created successfully!", paylist.ID)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "paylist item created successfully!",
+		Data: paylist.ID,
+	})
 
 }
 
-// UpdateUserPaylist handle status completed in paylists
 func UpdateUserPaylist(c *gin.Context) {
 	paylist := model.Paylist{}
 	user := model.User{}
@@ -122,18 +148,27 @@ func UpdateUserPaylist(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+		util.CallUserError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure the token is valid",
+			Err: err,
+		})
 	}
 
 	// Check User balance
 	username := tk.Username
 	id, _ := strconv.Atoi(c.Param("id"))
 	if err = config.DB.Model(&user).Select("balance").Where("username = ?", username).Find(&user).Error; err != nil {
-		util.CallErrorNotFound(c, "user not found", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "user not found",
+			Err: err,
+		})
 		return
 	}
 	if err = config.DB.Model(&paylist).Where("ID = ? AND username = ?", id, username).First(&paylist).Error; err != nil || err == gorm.ErrRecordNotFound {
-		util.CallErrorNotFound(c, "no paylist found", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "no paylist found",
+			Err: nil,
+		})
 		return
 	}
 	firstAmount := paylist.Amount
@@ -144,13 +179,19 @@ func UpdateUserPaylist(c *gin.Context) {
 		DueDate: c.PostForm("due_date"),
 	}
 	if tk.Username != paylist.Username {
-		util.CallServerError(c, "not authorized", nil)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "not authorized",
+			Err: nil,
+		})
 		return
 	}
 	// Update paylist
 	if err = config.DB.Model(&paylist).Where("username = ?", username).Update(&updatedPaylist).Error; err != nil {
 		fmt.Println(err)
-		util.CallServerError(c, "something error when try to update paylist", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "something error when try to update paylist",
+			Err: err,
+		})
 		return
 	}
 
@@ -158,13 +199,18 @@ func UpdateUserPaylist(c *gin.Context) {
 	err = config.DB.Model(&user).Where("username = ?", username).Update("balance", (firstAmount-amount)+user.Balance).Error
 	if err != nil {
 		fmt.Println(err)
-		util.CallServerError(c, "something error when try to update user balance", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "something error when try to update user balance",
+			Err: err,
+		})
 		return
 	}
-	util.CallSuccessOK(c, "paylist successfully updated!", paylist)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "paylist successfully updated!",
+		Data: paylist,
+	})
 }
 
-// UpdateUserPaylistStatus is a function to mark the paylist completed or not
 func UpdateUserPaylistStatus(c *gin.Context) {
 	paylist := model.Paylist{}
 	user := model.User{}
@@ -177,18 +223,27 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+		util.CallUserError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure the token is valid",
+			Err: err,
+		})
 	}
 	username := tk.Username
 
 	// Check User balance
 	id, _ := strconv.Atoi(c.Param("id"))
 	if err := config.DB.Model(&paylist).Where("ID = ? AND username = ?", id, username).First(&paylist).Error; err != nil || err == gorm.ErrRecordNotFound {
-		util.CallErrorNotFound(c, "no paylist found", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "no paylist found",
+			Err: nil,
+		})
 		return
 	}
 	if err := config.DB.Model(&user).Select("balance").Where("username = ?", username).First(&user).Error; err != nil {
-		util.CallErrorNotFound(c, "user not found", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "user not found",
+			Err: err,
+		})
 		return
 	}
 
@@ -200,10 +255,12 @@ func UpdateUserPaylistStatus(c *gin.Context) {
 		paylist.Completed = false
 		config.DB.Model(&paylist).Where("ID = ? and username = ?", id, username).Update(&paylist)
 	}
-	util.CallSuccessOK(c, "successfully update user paylist", paylist.Completed)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "successfully update user paylist",
+		Data: paylist.Completed,
+	})
 }
 
-// DeleteUserPaylist handle deleted user paylist
 func DeleteUserPaylist(c *gin.Context) {
 	paylistID, _ := strconv.Atoi(c.Param("id"))
 	paylist := &model.Paylist{}
@@ -211,7 +268,10 @@ func DeleteUserPaylist(c *gin.Context) {
 	tk := User{}
 
 	if paylistID == 0 {
-		util.CallUserError(c, "please specify paylist id", nil)
+		util.CallUserError(c, util.APIErrorParams{
+			Msg: "please specify paylist id",
+			Err: nil,
+		})
 		return
 	}
 	// Parse the token payload and validate the username is own the paylist
@@ -221,53 +281,79 @@ func DeleteUserPaylist(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+		util.CallUserError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure the token is valid",
+			Err: err,
+		})
 	}
 	username := tk.Username
 	if err = config.DB.Where("ID = ?", paylistID).Find(&paylist).Error; err != nil {
-		util.CallErrorNotFound(c, "no paylist found!", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "no paylist found!",
+			Err: err,
+		})
 		c.Abort()
 		return
 	}
 
 	config.DB.Model(&paylist).Where("username = ?", username).First(&paylist)
 	if tk.Username != paylist.Username {
-		util.CallServerError(c, "user not authorized", nil)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "user not authorized",
+			Err: nil,
+		})
 		c.Abort()
 		return
 	}
 
 	if err = config.DB.Model(&paylist).Select("amount, completed").Where("ID = ? and username = ?", paylistID, username).First(&paylist).Error; err != nil {
-		util.CallErrorNotFound(c, "can't select amount", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "can't select amount",
+			Err: err,
+		})
 		return
 	}
 
 	if err := config.DB.Model(&user).Select("balance").Where("username = ?", username).First(&user).Error; err != nil {
-		util.CallErrorNotFound(c, "can't select balance", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{
+			Msg: "can't select balance",
+			Err: err,
+		})
 		return
 	}
 	if paylist.Completed == false {
 		b := paylist.Amount + user.Balance
 		if err = config.DB.Table("users").Where("username = ?", username).Update("balance", b).Error; err != nil {
 			fmt.Println(&user.Balance)
-			util.CallServerError(c, "fail to update the user balance", err)
+			util.CallServerError(c, util.APIErrorParams{
+				Msg: "fail to update the user balance",
+				Err: err,
+			})
 			return
 		}
 	}
 	if err := config.DB.Model(&paylist).Where("ID = ? and username = ?", paylistID, username).Delete(&paylist).Error; err != nil {
-		util.CallServerError(c, "paylist fail to delete", err)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "paylist fail to delete",
+			Err: err,
+		})
 	}
-	util.CallSuccessOK(c, "paylist successfully deleted!", nil)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "paylist successfully deleted!",
+		Data: nil,
+	})
 }
 
-// FilterPaylist is a function to filter paylist based on month
 func FilterPaylist(c *gin.Context) {
 	paylist := model.Paylist{}
 	//param,_ := strconv.ParseInt(c.Param("month"),10,64)
 	//month := paylist.CreatedAt.Month()
 	param := c.Param("created_at")
 	if param != "" {
-		util.CallServerError(c, "please specify the filter parameter", nil)
+		util.CallServerError(c, util.APIErrorParams{
+			Msg: "please specify the filter parameter",
+			Err: nil,
+		})
 		return
 	}
 	tk := User{}
@@ -279,7 +365,10 @@ func FilterPaylist(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallUserError(c, "fail to parse the token, make sure the token is valid", err)
+		util.CallUserError(c, util.APIErrorParams{
+			Msg: "fail to parse the token, make sure the token is valid",
+			Err: err,
+		})
 	}
 	username := tk.Username
 
@@ -288,5 +377,8 @@ func FilterPaylist(c *gin.Context) {
 		fmt.Println(err)
 		return
 	}
-	util.CallSuccessOK(c, "success paylist", paylist)
+	util.CallSuccessOK(c, util.APISuccessParams{
+		Msg:  "success paylist",
+		Data: paylist,
+	})
 }
