@@ -43,30 +43,43 @@ func CreateUser(c *gin.Context) {
 		Password: c.PostForm("password"),
 	}
 	//check field can't empty
-	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == "" {
-		util.CallUserError(c, "field can't be null", nil)
+	if users.Username == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "username can't be null"})
 		return
 	}
+	if users.Name == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "name can't be null"})
+		return
+	}
+	if users.Password == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "password can't be null"})
+		return
+	}
+	if users.Email == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "email can't be null"})
+		return
+	}
+
 	//check username exist or not
 	var exists model.User
 	if err := config.DB.Where("username = ?", users.Username).First(&exists).Error; err == nil {
-		util.CallServerError(c, "username already exist", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "username already exist", Err: err})
 		return
 	}
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
 	if err != nil {
-		util.CallServerError(c, "password encryption failed", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "password encryption failed", Err: err})
 		return
 	}
 
 	users.Password = string(password)
 	err = config.DB.Save(&users).Error
 	if err != nil {
-		util.CallServerError(c, "Failed Create User!", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed Create User!", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "User created Successfully!", users.ID)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "User created Successfully!", Data: users.ID})
 }
 
 // FetchAllUser function to get list of users
@@ -80,14 +93,14 @@ func FetchAllUser(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 	config.DB.Model(&users).Where("username = ? ", username).Find(&users)
 
 	if len(users) <= 0 {
-		util.CallErrorNotFound(c, "No User Found!", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "No User Found!"})
 		return
 	}
 	for _, item := range users {
@@ -102,7 +115,7 @@ func FetchAllUser(c *gin.Context) {
 			Balance:   item.Balance,
 		})
 	}
-	util.CallSuccessOK(c, "Fetch All Users Data ", user)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "Fetch All Users Data", Data: user})
 }
 
 // UpdateUser function to update user information
@@ -116,13 +129,13 @@ func UpdateUser(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	if balance == 0 || balance < 0 {
-		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
+		util.CallUserError(c, util.APIErrorParams{Msg: "please specify the amount of balance, it can't be negative or zero"})
 		return
 	}
 	user := model.User{
@@ -133,15 +146,15 @@ func UpdateUser(c *gin.Context) {
 	}
 	config.DB.First(&users, ID)
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found, make sure to specify the id"})
 		return
 	}
 	err = config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update(&user).Error
 	if err != nil {
-		util.CallServerError(c, "Failed to update user", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to update user", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "User successfully updated!", ID)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "User successfully updated!", Data: ID})
 }
 
 func EditPassword(c *gin.Context) {
