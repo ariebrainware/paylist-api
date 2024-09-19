@@ -8,7 +8,6 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/ariebrainware/paylist-api/config"
@@ -211,45 +210,59 @@ func EditPassword(c *gin.Context) {
 
 // AddBalance is a function to add user balance or income
 func AddBalance(c *gin.Context) {
-	var users model.User
-	var inc model.Income
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
+	tk, err := parseToken(c)
+	if err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
-	if err = config.DB.Model(&users).Where("username = ?", username).Find(&users).Error; err != nil || err == gorm.ErrRecordNotFound {
+
+	users, err := findUserByUsername(username)
+	if err != nil {
 		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "no user found"})
 		return
 	}
 
-	firstBalance := users.Balance
-	balance, _ := strconv.Atoi(c.PostForm("balance"))
-	if balance == 0 || balance < 0 {
-		util.CallUserError(c, util.APIErrorParams{Msg: "please specify the amount of balance, it can't be negative or zero"})
-		return
-	}
-	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
+	balance, err := getBalanceFromRequest(c)
 	if err != nil {
-		fmt.Println(err)
+		util.CallUserError(c, util.APIErrorParams{Msg: err.Error()})
 		return
 	}
+
+	err = updateBalance(users, balance)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to update balance", Err: err})
+		return
+	}
+
+	err = saveIncome(username, balance)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to save income", Err: err})
+		return
+	}
+
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "successfully add balance"})
+}
+
+func getBalanceFromRequest(c *gin.Context) (int, error) {
+	balance, err := strconv.Atoi(c.PostForm("balance"))
+	if err != nil || balance <= 0 {
+		return 0, fmt.Errorf("please specify the amount of balance, it can't be negative or zero")
+	}
+	return balance, nil
+}
+
+func updateBalance(users *model.User, balance int) error {
+	firstBalance := users.Balance
+	return config.DB.Model(users).Where("username = ?", users.Username).Update("balance", balance+firstBalance).Error
+}
+
+func saveIncome(username string, balance int) error {
 	data := model.Income{
 		Username: username,
 		Income:   balance,
 	}
-	err = config.DB.Model(&inc).Save(&data).Error
-	if err != nil {
-		fmt.Println("error", err)
-		return
-	}
-	util.CallSuccessOK(c, util.APISuccessParams{Msg: "successfully add balance"})
+	return config.DB.Model(&model.Income{}).Save(&data).Error
 }
 
 // DeleteUser function to handle user deletion
@@ -316,52 +329,30 @@ func FetchSingleUser(c *gin.Context) {
 
 // Login function to handle login user
 func Login(c *gin.Context) {
-	logging := &model.Logging{}
-	username := c.PostForm("username")
-	password := c.PostForm("password")
-
-	user := &model.User{}
-	if username == "" || password == "" {
-		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "please provide username and password"})
+	username, password := c.PostForm("username"), c.PostForm("password")
+	if err := validateLoginInput(username, password); err != nil {
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: err.Error()})
 		return
 	}
-	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
+
+	user, err := findUserByUsername(username)
 	if err != nil {
 		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong username", Err: err})
 		return
 	}
-	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong password or password doesn't match", Err: errf})
+
+	if err := validatePassword(user.Password, password); err != nil {
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong password or password doesn't match", Err: err})
 		return
 	}
 
-	expirationTime := time.Now().Add(720 * time.Minute)
-	tk := &Token{
-		Username: user.Username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-	//Create JWT token
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenString, err := token.SignedString([]byte(fmt.Sprintf(config.Conf.JWTSignature)))
+	tokenString, err := createToken(user.Username)
 	if err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "error create token", Err: err})
-		c.Abort()
-	}
-	data := &model.Logging{
-		Token:      tokenString,
-		Username:   username,
-		UserStatus: true,
-	}
-	config.DB.Model(&logging).Find(&logging)
-	if logging.Username == username {
-		util.CallUserFound(c, util.APISuccessParams{Msg: "already login"})
-		c.Abort()
 		return
 	}
-	if err = config.DB.Model(&logging).Save(&data).Error; err != nil {
+
+	if err := saveLoginData(username, tokenString); err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "fail to save logging data", Err: err})
 		return
 	}
@@ -369,9 +360,46 @@ func Login(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:    "token",
 		Value:   tokenString,
-		Expires: expirationTime,
+		Expires: time.Now().Add(720 * time.Minute),
 	})
 	util.CallSuccessOK(c, util.APISuccessParams{Msg: "logged in", Data: tokenString})
+}
+
+func validateLoginInput(username, password string) error {
+	if username == "" || password == "" {
+		return fmt.Errorf("please provide username and password")
+	}
+	return nil
+}
+
+func validatePassword(hashedPassword, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+func createToken(username string) (string, error) {
+	expirationTime := time.Now().Add(720 * time.Minute)
+	tk := &Token{
+		Username: username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
+	return token.SignedString([]byte(fmt.Sprintf(config.Conf.JWTSignature)))
+}
+
+func saveLoginData(username, tokenString string) error {
+	logging := &model.Logging{}
+	data := &model.Logging{
+		Token:      tokenString,
+		Username:   username,
+		UserStatus: true,
+	}
+	config.DB.Model(&logging).Find(&logging)
+	if logging.Username == username {
+		return fmt.Errorf("already login")
+	}
+	return config.DB.Model(&logging).Save(&data).Error
 }
 
 // Auth function authorization to handle authorized
