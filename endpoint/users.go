@@ -167,7 +167,7 @@ func EditPassword(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
@@ -176,29 +176,29 @@ func EditPassword(c *gin.Context) {
 	NewPassword := c.PostForm("NewPassword")
 	config.DB.First(&users, ID)
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found, make sure to specify the id"})
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(users.Password), []byte(OldPassword))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		util.CallErrorNotFound(c, "password doesn't match", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "password doesn't match", Err: errf})
 		return
 	}
 
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		util.CallServerError(c, "password encryption failed", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "password encryption failed", Err: err})
 		return
 	}
 	users.Password = string(password)
 	err = config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update("password", users.Password).Error
 	if err != nil {
-		util.CallServerError(c, "Failed to update user", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to update user", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "Password successfully updated!", ID)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "Password successfully updated!", Data: ID})
 }
 
 // AddBalance is a function to add user balance or income
@@ -212,19 +212,19 @@ func AddBalance(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 	if err = config.DB.Model(&users).Where("username = ?", username).Find(&users).Error; err != nil || err == gorm.ErrRecordNotFound {
-		util.CallErrorNotFound(c, "no user found", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "no user found"})
 		return
 	}
 
 	firstBalance := users.Balance
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	if balance == 0 || balance < 0 {
-		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
+		util.CallUserError(c, util.APIErrorParams{Msg: "please specify the amount of balance, it can't be negative or zero"})
 		return
 	}
 	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
@@ -241,7 +241,7 @@ func AddBalance(c *gin.Context) {
 		fmt.Println("error", err)
 		return
 	}
-	util.CallSuccessOK(c, "successfully add balance", nil)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "successfully add balance"})
 }
 
 // DeleteUser function to handle user deletion
@@ -255,21 +255,21 @@ func DeleteUser(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 	config.DB.First(&users, usersID)
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "user not found", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found"})
 		return
 	}
 	config.DB.Model(&users).Where("username = ?", username).Delete(&users)
 	if tk.Username != users.Username {
-		util.CallServerError(c, "not authorized", nil)
+		util.CallServerError(c, util.APIErrorParams{Msg: "not authorized"})
 		return
 	}
-	util.CallSuccessOK(c, "user delete successfully!", nil)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "user delete successfully!"})
 }
 
 // FetchSingleUser function to get single user
@@ -283,14 +283,14 @@ func FetchSingleUser(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 
 	errf := config.DB.Model(&model.User{}).Where("ID = ? and username = ?", usersID, username).Find(&users).Error
 	if errf != nil {
-		util.CallErrorNotFound(c, "no user found", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "no user found", Err: errf})
 		return
 	}
 	user := &user1{
@@ -303,7 +303,7 @@ func FetchSingleUser(c *gin.Context) {
 		Username:  users.Username,
 		Balance:   users.Balance,
 	}
-	util.CallSuccessOK(c, "success fetch single data", user)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "success fetch single data", Data: user})
 }
 
 // Login function to handle login user
@@ -314,17 +314,17 @@ func Login(c *gin.Context) {
 
 	user := &model.User{}
 	if username == "" || password == "" {
-		util.CallErrorNotFound(c, "please provide username and password", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "please provide username and password"})
 		return
 	}
 	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
 	if err != nil {
-		util.CallErrorNotFound(c, "wrong username", err)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong username", Err: err})
 		return
 	}
 	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		util.CallErrorNotFound(c, "wrong password or password doesn't match", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong password or password doesn't match", Err: errf})
 		return
 	}
 
@@ -339,7 +339,7 @@ func Login(c *gin.Context) {
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, err := token.SignedString([]byte(fmt.Sprintf(config.Conf.JWTSignature)))
 	if err != nil {
-		util.CallServerError(c, "error create token", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "error create token", Err: err})
 		c.Abort()
 	}
 	data := &model.Logging{
@@ -349,12 +349,12 @@ func Login(c *gin.Context) {
 	}
 	config.DB.Model(&logging).Find(&logging)
 	if logging.Username == username {
-		util.CallUserFound(c, "already login", nil)
+		util.CallUserFound(c, util.APISuccessParams{Msg: "already login"})
 		c.Abort()
 		return
 	}
 	if err = config.DB.Model(&logging).Save(&data).Error; err != nil {
-		util.CallServerError(c, "fail to save logging data", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to save logging data", Err: err})
 		return
 	}
 
@@ -363,7 +363,7 @@ func Login(c *gin.Context) {
 		Value:   tokenString,
 		Expires: expirationTime,
 	})
-	util.CallSuccessOK(c, "logged in", tokenString)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "logged in", Data: tokenString})
 }
 
 // Auth function authorization to handle authorized
@@ -379,14 +379,14 @@ func Auth(c *gin.Context) {
 	})
 	config.DB.Model(&logging).Where("token = ? ", tokenString).Find(&logging)
 	if logging.Token == "" {
-		util.CallServerError(c, "you have to sign in first", nil)
+		util.CallServerError(c, util.APIErrorParams{Msg: "you have to sign in first"})
 		c.Abort()
 	} else if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallUserError(c, "token expired", err)
+		util.CallUserError(c, util.APIErrorParams{Msg: "token expired", Err: err})
 		err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
 		if err != nil {
 			fmt.Println(err)
-			util.CallServerError(c, "fail when try to delete the logging", err)
+			util.CallServerError(c, util.APIErrorParams{Msg: "fail when try to delete the logging", Err: err})
 		}
 		c.Abort()
 		return
@@ -404,9 +404,9 @@ func Logout(c *gin.Context) {
 	err := config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging).Error
 	if err != nil {
 		fmt.Println(err)
-		util.CallServerError(c, "fail when try to delete the logging", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail when try to delete the logging", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "logged out", logging.UserStatus)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "logged out", Data: logging.UserStatus})
 	return
 }
