@@ -417,7 +417,7 @@ func Auth(c *gin.Context) {
 	if logging.Token == "" {
 		util.CallServerError(c, util.APIErrorParams{Msg: "you have to sign in first"})
 		c.Abort()
-	} else if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
+	} else if token != nil && time.Until(time.Unix(claim.ExpiresAt, 0)) < 30*time.Second {
 		util.CallUserError(c, util.APIErrorParams{Msg: "token expired", Err: err})
 		err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
 		if err != nil {
@@ -444,5 +444,4 @@ func Logout(c *gin.Context) {
 		return
 	}
 	util.CallSuccessOK(c, util.APISuccessParams{Msg: "logged out", Data: logging.UserStatus})
-	return
 }
