@@ -86,17 +86,13 @@ func CreateUser(c *gin.Context) {
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
+
+	username, err := getUsernameFromToken(c)
+	if err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
-	username := tk.Username
+
 	config.DB.Model(&users).Where("username = ? ", username).Find(&users)
 
 	if len(users) <= 0 {
@@ -116,6 +112,18 @@ func FetchAllUser(c *gin.Context) {
 		})
 	}
 	util.CallSuccessOK(c, util.APISuccessParams{Msg: "Fetch All Users Data", Data: user})
+}
+
+func getUsernameFromToken(c *gin.Context) (string, error) {
+	tk := User{}
+	tokenString := c.GetHeader("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
+	})
+	if err != nil || token == nil {
+		return "", err
+	}
+	return tk.Username, nil
 }
 
 // UpdateUser function to update user information
