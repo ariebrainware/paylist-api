@@ -327,7 +327,7 @@ func FetchSingleUser(c *gin.Context) {
 	util.CallSuccessOK(c, util.APISuccessParams{Msg: "success fetch single data", Data: user})
 }
 
-// Login function to handle login user
+// Login is a function to handle user login
 func Login(c *gin.Context) {
 	username, password := c.PostForm("username"), c.PostForm("password")
 	if err := validateLoginInput(username, password); err != nil {
@@ -402,7 +402,7 @@ func saveLoginData(username, tokenString string) error {
 	return config.DB.Model(&logging).Save(&data).Error
 }
 
-// Auth function authorization to handle authorized
+// Auth is a middleware to check if the user is authenticated or not
 func Auth(c *gin.Context) {
 	claim := Token{}
 	logging := &model.Logging{}
@@ -429,7 +429,15 @@ func Auth(c *gin.Context) {
 	}
 }
 
-// Logout handle logout user
+// Logout handles the user logout process. It performs the following steps:
+// 1. Retrieves the "Authorization" header from the request context.
+// 2. Updates the user status to false in the logging model based on the token.
+// 3. Deletes the logging entry associated with the token from the database.
+// 4. If any error occurs during the update or delete operations, it logs the error and sends a server error response.
+// 5. If the operations are successful, it sends a success response indicating the user has logged out.
+//
+// Parameters:
+// - c: The Gin context which provides request and response handling.
 func Logout(c *gin.Context) {
 	logging := &model.Logging{}
 	tokenStr := c.GetHeader("Authorization")
