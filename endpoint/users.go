@@ -269,13 +269,8 @@ func saveIncome(username string, balance int) error {
 func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
+	tk, err := parseToken(c)
+	if err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
@@ -284,12 +279,11 @@ func DeleteUser(c *gin.Context) {
 	if users.ID == 0 {
 		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found"})
 		return
-	}
-	config.DB.Model(&users).Where("username = ?", username).Delete(&users)
-	if tk.Username != users.Username {
-		util.CallServerError(c, util.APIErrorParams{Msg: "not authorized"})
+	} else if tk.Username != users.Username {
+		util.CallUserError(c, util.APIErrorParams{Msg: "not authorized", Err: fmt.Errorf("not authorized for specified user")})
 		return
 	}
+	config.DB.Model(&users).Where("username = ?", username).Delete(&users)
 	util.CallSuccessOK(c, util.APISuccessParams{Msg: "user delete successfully!"})
 }
 
@@ -415,8 +409,9 @@ func Auth(c *gin.Context) {
 	})
 	config.DB.Model(&logging).Where("token = ? ", tokenString).Find(&logging)
 	if logging.Token == "" {
-		util.CallServerError(c, util.APIErrorParams{Msg: "you have to sign in first"})
+		util.CallServerError(c, util.APIErrorParams{Msg: "you have to sign in first", Err: err})
 		c.Abort()
+		return
 	} else if token != nil && time.Until(time.Unix(claim.ExpiresAt, 0)) < 30*time.Second {
 		util.CallUserError(c, util.APIErrorParams{Msg: "token expired", Err: err})
 		err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
