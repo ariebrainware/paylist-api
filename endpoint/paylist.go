@@ -278,7 +278,7 @@ func parseToken(c *gin.Context) (*User, error) {
 
 func findUserByUsername(username string) (*model.User, error) {
 	user := model.User{}
-	err := config.DB.Model(&user).Select("balance").Where("username = ?", username).Find(&user).Error
+	err := config.DB.Model(&user).Where("username = ?", username).Find(&user).Error
 	return &user, err
 }
 
