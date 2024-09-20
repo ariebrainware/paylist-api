@@ -4,3 +4,4 @@ gin-bin
 *.idea
 .env
 config/config.json
+.DS_Store
