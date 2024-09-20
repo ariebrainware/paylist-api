@@ -44,7 +44,10 @@ func main() {
 	}
 
 	router.GET("/", func(c *gin.Context) {
-		util.CallSuccessOK(c, "Paylist-API available endpoint", listEndpoint)
+		util.CallSuccessOK(c, util.APISuccessParams{
+			Msg:  "Paylist-API available endpoint",
+			Data: listEndpoint,
+		})
 	})
 
 	router.GET("/paylist", ep.Auth, ep.FetchAllPaylist)

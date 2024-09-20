@@ -8,7 +8,6 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go" //Used to sign and verify JWT tokens
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/ariebrainware/paylist-api/config"
@@ -43,51 +42,60 @@ func CreateUser(c *gin.Context) {
 		Password: c.PostForm("password"),
 	}
 	//check field can't empty
-	if users.Username == "" || users.Name == "" || users.Password == "" || users.Email == "" {
-		util.CallUserError(c, "field can't be null", nil)
+	if users.Username == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "username can't be null"})
 		return
 	}
+	if users.Name == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "name can't be null"})
+		return
+	}
+	if users.Password == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "password can't be null"})
+		return
+	}
+	if users.Email == "" {
+		util.CallUserError(c, util.APIErrorParams{Msg: "email can't be null"})
+		return
+	}
+
 	//check username exist or not
 	var exists model.User
 	if err := config.DB.Where("username = ?", users.Username).First(&exists).Error; err == nil {
-		util.CallServerError(c, "username already exist", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "username already exist", Err: err})
 		return
 	}
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(users.Password), bcrypt.DefaultCost)
 	if err != nil {
-		util.CallServerError(c, "password encryption failed", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "password encryption failed", Err: err})
 		return
 	}
 
 	users.Password = string(password)
 	err = config.DB.Save(&users).Error
 	if err != nil {
-		util.CallServerError(c, "Failed Create User!", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed Create User!", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "User created Successfully!", users.ID)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "User created Successfully!", Data: users.ID})
 }
 
 // FetchAllUser function to get list of users
 func FetchAllUser(c *gin.Context) {
 	var users []model.User
 	var user []user1
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+
+	username, err := getUsernameFromToken(c)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
-	username := tk.Username
+
 	config.DB.Model(&users).Where("username = ? ", username).Find(&users)
 
 	if len(users) <= 0 {
-		util.CallErrorNotFound(c, "No User Found!", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "No User Found!"})
 		return
 	}
 	for _, item := range users {
@@ -102,7 +110,19 @@ func FetchAllUser(c *gin.Context) {
 			Balance:   item.Balance,
 		})
 	}
-	util.CallSuccessOK(c, "Fetch All Users Data ", user)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "Fetch All Users Data", Data: user})
+}
+
+func getUsernameFromToken(c *gin.Context) (string, error) {
+	tk := User{}
+	tokenString := c.GetHeader("Authorization")
+	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
+	})
+	if err != nil || token == nil {
+		return "", err
+	}
+	return tk.Username, nil
 }
 
 // UpdateUser function to update user information
@@ -116,13 +136,13 @@ func UpdateUser(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 	balance, _ := strconv.Atoi(c.PostForm("balance"))
 	if balance == 0 || balance < 0 {
-		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
+		util.CallUserError(c, util.APIErrorParams{Msg: "please specify the amount of balance, it can't be negative or zero"})
 		return
 	}
 	user := model.User{
@@ -133,15 +153,15 @@ func UpdateUser(c *gin.Context) {
 	}
 	config.DB.First(&users, ID)
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found, make sure to specify the id"})
 		return
 	}
 	err = config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update(&user).Error
 	if err != nil {
-		util.CallServerError(c, "Failed to update user", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to update user", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "User successfully updated!", ID)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "User successfully updated!", Data: ID})
 }
 
 func EditPassword(c *gin.Context) {
@@ -154,7 +174,7 @@ func EditPassword(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
@@ -163,100 +183,108 @@ func EditPassword(c *gin.Context) {
 	NewPassword := c.PostForm("NewPassword")
 	config.DB.First(&users, ID)
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "user not found, make sure to specify the id", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found, make sure to specify the id"})
 		return
 	}
 
 	errf := bcrypt.CompareHashAndPassword([]byte(users.Password), []byte(OldPassword))
 	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		util.CallErrorNotFound(c, "password doesn't match", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "password doesn't match", Err: errf})
 		return
 	}
 
 	//Password Encryption
 	password, err := bcrypt.GenerateFromPassword([]byte(NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		util.CallServerError(c, "password encryption failed", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "password encryption failed", Err: err})
 		return
 	}
 	users.Password = string(password)
 	err = config.DB.Model(&users).Where("username = ? and ID = ?", username, ID).Update("password", users.Password).Error
 	if err != nil {
-		util.CallServerError(c, "Failed to update user", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to update user", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "Password successfully updated!", ID)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "Password successfully updated!", Data: ID})
 }
 
 // AddBalance is a function to add user balance or income
 func AddBalance(c *gin.Context) {
-	var users model.User
-	var inc model.Income
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+	tk, err := parseToken(c)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
-	if err = config.DB.Model(&users).Where("username = ?", username).Find(&users).Error; err != nil || err == gorm.ErrRecordNotFound {
-		util.CallErrorNotFound(c, "no user found", nil)
+
+	users, err := findUserByUsername(username)
+	if err != nil {
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "no user found"})
 		return
 	}
 
-	firstBalance := users.Balance
-	balance, _ := strconv.Atoi(c.PostForm("balance"))
-	if balance == 0 || balance < 0 {
-		util.CallUserError(c, "please specify the amount of balance, it can't be negative or zero", nil)
-		return
-	}
-	err = config.DB.Model(&users).Where("username = ?", username).Update("balance", balance+firstBalance).Error
+	balance, err := getBalanceFromRequest(c)
 	if err != nil {
-		fmt.Println(err)
+		util.CallUserError(c, util.APIErrorParams{Msg: err.Error()})
 		return
 	}
+
+	err = updateBalance(users, balance)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to update balance", Err: err})
+		return
+	}
+
+	err = saveIncome(username, balance)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "Failed to save income", Err: err})
+		return
+	}
+
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "successfully add balance"})
+}
+
+func getBalanceFromRequest(c *gin.Context) (int, error) {
+	balance, err := strconv.Atoi(c.PostForm("balance"))
+	if err != nil || balance <= 0 {
+		return 0, fmt.Errorf("please specify the amount of balance, it can't be negative or zero")
+	}
+	return balance, nil
+}
+
+func updateBalance(users *model.User, balance int) error {
+	firstBalance := users.Balance
+	return config.DB.Model(users).Where("username = ?", users.Username).Update("balance", balance+firstBalance).Error
+}
+
+func saveIncome(username string, balance int) error {
 	data := model.Income{
 		Username: username,
 		Income:   balance,
 	}
-	err = config.DB.Model(&inc).Save(&data).Error
-	if err != nil {
-		fmt.Println("error", err)
-		return
-	}
-	util.CallSuccessOK(c, "successfully add balance", nil)
+	return config.DB.Model(&model.Income{}).Save(&data).Error
 }
 
 // DeleteUser function to handle user deletion
 func DeleteUser(c *gin.Context) {
 	var users model.User
 	usersID := c.Param("id")
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprintf(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+	tk, err := parseToken(c)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 	config.DB.First(&users, usersID)
 	if users.ID == 0 {
-		util.CallErrorNotFound(c, "user not found", nil)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "user not found"})
+		return
+	} else if tk.Username != users.Username {
+		util.CallUserError(c, util.APIErrorParams{Msg: "not authorized", Err: fmt.Errorf("not authorized for specified user")})
 		return
 	}
 	config.DB.Model(&users).Where("username = ?", username).Delete(&users)
-	if tk.Username != users.Username {
-		util.CallServerError(c, "not authorized", nil)
-		return
-	}
-	util.CallSuccessOK(c, "user delete successfully!", nil)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "user delete successfully!"})
 }
 
 // FetchSingleUser function to get single user
@@ -270,14 +298,14 @@ func FetchSingleUser(c *gin.Context) {
 	})
 	if err != nil || token == nil {
 		fmt.Println(err, token)
-		util.CallServerError(c, "fail to parse the token, make sure token is valid", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
 	username := tk.Username
 
 	errf := config.DB.Model(&model.User{}).Where("ID = ? and username = ?", usersID, username).Find(&users).Error
 	if errf != nil {
-		util.CallErrorNotFound(c, "no user found", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "no user found", Err: errf})
 		return
 	}
 	user := &user1{
@@ -290,45 +318,72 @@ func FetchSingleUser(c *gin.Context) {
 		Username:  users.Username,
 		Balance:   users.Balance,
 	}
-	util.CallSuccessOK(c, "success fetch single data", user)
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "success fetch single data", Data: user})
 }
 
-// Login function to handle login user
+// Login is a function to handle user login
 func Login(c *gin.Context) {
-	logging := &model.Logging{}
-	username := c.PostForm("username")
-	password := c.PostForm("password")
-
-	user := &model.User{}
-	if username == "" || password == "" {
-		util.CallErrorNotFound(c, "please provide username and password", nil)
+	username, password := c.PostForm("username"), c.PostForm("password")
+	if err := validateLoginInput(username, password); err != nil {
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: err.Error()})
 		return
 	}
-	err := config.DB.Model(&user).Where("username = ?", username).First(&user).Error
+
+	user, err := findUserByUsername(username)
 	if err != nil {
-		util.CallErrorNotFound(c, "wrong username", err)
-		return
-	}
-	errf := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if errf != nil && errf == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
-		util.CallErrorNotFound(c, "wrong password or password doesn't match", errf)
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong username", Err: err})
 		return
 	}
 
+	if err := validatePassword(user.Password, password); err != nil {
+		util.CallErrorNotFound(c, util.APIErrorParams{Msg: "wrong password or password doesn't match", Err: err})
+		return
+	}
+
+	tokenString, err := createToken(user.Username)
+	if err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "error create token", Err: err})
+		return
+	}
+
+	if err := saveLoginData(username, tokenString); err != nil {
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail to save logging data", Err: err})
+		return
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: time.Now().Add(720 * time.Minute),
+	})
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "logged in", Data: tokenString})
+}
+
+func validateLoginInput(username, password string) error {
+	if username == "" || password == "" {
+		return fmt.Errorf("please provide username and password")
+	}
+	return nil
+}
+
+func validatePassword(hashedPassword, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+func createToken(username string) (string, error) {
 	expirationTime := time.Now().Add(720 * time.Minute)
 	tk := &Token{
-		Username: user.Username,
+		Username: username,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
-	//Create JWT token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenString, err := token.SignedString([]byte(fmt.Sprintf(config.Conf.JWTSignature)))
-	if err != nil {
-		util.CallServerError(c, "error create token", err)
-		c.Abort()
-	}
+	return token.SignedString([]byte(fmt.Sprintf(config.Conf.JWTSignature)))
+}
+
+func saveLoginData(username, tokenString string) error {
+	logging := &model.Logging{}
 	data := &model.Logging{
 		Token:      tokenString,
 		Username:   username,
@@ -336,24 +391,12 @@ func Login(c *gin.Context) {
 	}
 	config.DB.Model(&logging).Find(&logging)
 	if logging.Username == username {
-		util.CallUserFound(c, "already login", nil)
-		c.Abort()
-		return
+		return fmt.Errorf("already login")
 	}
-	if err = config.DB.Model(&logging).Save(&data).Error; err != nil {
-		util.CallServerError(c, "fail to save logging data", err)
-		return
-	}
-
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
-	util.CallSuccessOK(c, "logged in", tokenString)
+	return config.DB.Model(&logging).Save(&data).Error
 }
 
-// Auth function authorization to handle authorized
+// Auth is a middleware to check if the user is authenticated or not
 func Auth(c *gin.Context) {
 	claim := Token{}
 	logging := &model.Logging{}
@@ -366,21 +409,30 @@ func Auth(c *gin.Context) {
 	})
 	config.DB.Model(&logging).Where("token = ? ", tokenString).Find(&logging)
 	if logging.Token == "" {
-		util.CallServerError(c, "you have to sign in first", nil)
+		util.CallServerError(c, util.APIErrorParams{Msg: "you have to sign in first", Err: err})
 		c.Abort()
-	} else if token != nil && time.Unix(claim.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
-		util.CallUserError(c, "token expired", err)
+		return
+	} else if token != nil && time.Until(time.Unix(claim.ExpiresAt, 0)) < 30*time.Second {
+		util.CallUserError(c, util.APIErrorParams{Msg: "token expired", Err: err})
 		err = config.DB.Model(&logging).Where("token = ?", tokenString).Delete(&logging).Error
 		if err != nil {
 			fmt.Println(err)
-			util.CallServerError(c, "fail when try to delete the logging", err)
+			util.CallServerError(c, util.APIErrorParams{Msg: "fail when try to delete the logging", Err: err})
 		}
 		c.Abort()
 		return
 	}
 }
 
-// Logout handle logout user
+// Logout handles the user logout process. It performs the following steps:
+// 1. Retrieves the "Authorization" header from the request context.
+// 2. Updates the user status to false in the logging model based on the token.
+// 3. Deletes the logging entry associated with the token from the database.
+// 4. If any error occurs during the update or delete operations, it logs the error and sends a server error response.
+// 5. If the operations are successful, it sends a success response indicating the user has logged out.
+//
+// Parameters:
+// - c: The Gin context which provides request and response handling.
 func Logout(c *gin.Context) {
 	logging := &model.Logging{}
 	tokenStr := c.GetHeader("Authorization")
@@ -391,9 +443,8 @@ func Logout(c *gin.Context) {
 	err := config.DB.Model(&logging).Where("token = ?", tokenStr).Delete(&logging).Error
 	if err != nil {
 		fmt.Println(err)
-		util.CallServerError(c, "fail when try to delete the logging", err)
+		util.CallServerError(c, util.APIErrorParams{Msg: "fail when try to delete the logging", Err: err})
 		return
 	}
-	util.CallSuccessOK(c, "logged out", logging.UserStatus)
-	return
+	util.CallSuccessOK(c, util.APISuccessParams{Msg: "logged out", Data: logging.UserStatus})
 }

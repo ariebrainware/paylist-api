@@ -4,7 +4,9 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// Paylist is a model for paylist table
+// Paylist represents a payment list item with details such as name, amount,
+// username, due date, and completion status. It embeds gorm.Model to include
+// fields like ID, CreatedAt, UpdatedAt, and DeletedAt.
 type Paylist struct {
 	gorm.Model
 	Name      string `json:"name"`
