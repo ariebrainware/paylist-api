@@ -129,13 +129,8 @@ func getUsernameFromToken(c *gin.Context) (string, error) {
 func UpdateUser(c *gin.Context) {
 	var users model.User
 	ID := c.Param("id")
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
+	tk, err := parseToken(c)
+	if err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
@@ -167,13 +162,8 @@ func UpdateUser(c *gin.Context) {
 func EditPassword(c *gin.Context) {
 	var users model.User
 	ID := c.Param("id")
-	tk := User{}
-	tokenString := c.GetHeader("Authorization")
-	token, err := jwt.ParseWithClaims(tokenString, &tk, func(token *jwt.Token) (interface{}, error) {
-		return []byte(fmt.Sprint(config.Conf.JWTSignature)), nil
-	})
-	if err != nil || token == nil {
-		fmt.Println(err, token)
+	tk, err := parseToken(c)
+	if err != nil {
 		util.CallServerError(c, util.APIErrorParams{Msg: "fail to parse the token, make sure token is valid", Err: err})
 		return
 	}
